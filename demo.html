@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hitster Trainer - Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Main App Section - Demo Mode -->
+        <div id="main-section" class="section">
+            <header>
+                <h1>Hitster Trainer</h1>
+                <div id="user-info">Demo Mode - Welkom!</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <a href="index.html" class="btn btn-secondary" style="text-decoration: none;">← Terug naar hoofdpagina</a>
+                </div>
+            </header>
+
+            <div id="quiz-section">
+                <div id="score-board">
+                    <span>Score: <span id="current-score">2</span></span>
+                    <span>Vraag: <span id="question-number">3</span>/10</span>
+                </div>
+
+                <div id="question-container">
+                    <div id="audio-player">
+                        <button id="play-btn" class="btn btn-primary">▶️ Speel af</button>
+                        <div id="audio-controls">
+                            <p style="margin-top: 10px; color: #b3b3b3; font-size: 14px;">
+                                💡 In de echte app wordt het nummer automatisch afgespeeld via Spotify
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="question">
+                        <h2 id="question-text">Welke artiest zingt dit nummer?</h2>
+                        <div id="answers">
+                            <button class="answer-btn">Queen</button>
+                            <button class="answer-btn">The Beatles</button>
+                            <button class="answer-btn">Led Zeppelin</button>
+                            <button class="answer-btn">Pink Floyd</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="demo-info" style="background: rgba(29, 185, 84, 0.1); padding: 20px; border-radius: 10px; margin-top: 30px; border: 2px solid #1db954;">
+                    <h3 style="color: #1db954; margin-bottom: 15px;">🎵 Demo Mode</h3>
+                    <p style="margin-bottom: 15px;">
+                        Dit is een preview van de Hitster Trainer interface. In de echte applicatie:
+                    </p>
+                    <ul style="text-align: left; margin-left: 20px; margin-bottom: 15px;">
+                        <li>🎧 Wordt automatisch een nummer afgespeeld via Spotify</li>
+                        <li>🎯 Krijg je willekeurige vragen over 50+ bekende hits</li>
+                        <li>📊 Wordt je score bijgehouden gedurende 10 vragen</li>
+                        <li>🎨 Zie je direct feedback na elk antwoord</li>
+                    </ul>
+                    <p style="margin-bottom: 15px;">
+                        <strong>Om de volledige app te gebruiken:</strong>
+                    </p>
+                    <ol style="text-align: left; margin-left: 20px;">
+                        <li>Registreer een Spotify app op de <a href="https://developer.spotify.com/dashboard" target="_blank" style="color: #1db954;">Spotify Developer Dashboard</a></li>
+                        <li>Configureer je Client ID in <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">spotify-auth.js</code></li>
+                        <li>Start de applicatie en verbind met Spotify</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Demo functionality - just for visual demonstration
+        document.getElementById('play-btn').addEventListener('click', function() {
+            const btn = this;
+            if (btn.textContent.includes('▶️')) {
+                btn.textContent = '⏸️ Pauzeer';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+                
+                // Show playing animation
+                btn.style.animation = 'pulse 1s infinite';
+            } else {
+                btn.textContent = '▶️ Speel af';
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-primary');
+                btn.style.animation = 'none';
+            }
+        });
+
+        // Demo answer button functionality
+        const answerButtons = document.querySelectorAll('.answer-btn');
+        answerButtons.forEach((btn, index) => {
+            btn.addEventListener('click', function() {
+                // Disable all buttons
+                answerButtons.forEach(b => {
+                    b.style.pointerEvents = 'none';
+                    b.style.opacity = '0.7';
+                });
+
+                // Show correct answer (first button in this demo)
+                if (index === 0) {
+                    this.style.background = '#1db954';
+                    this.style.borderColor = '#1ed760';
+                    setTimeout(() => {
+                        alert('🎉 Correct! In de echte app ga je automatisch naar de volgende vraag.');
+                    }, 500);
+                } else {
+                    this.style.background = '#e22134';
+                    this.style.borderColor = '#ff4757';
+                    answerButtons[0].style.background = '#1db954';
+                    answerButtons[0].style.borderColor = '#1ed760';
+                    setTimeout(() => {
+                        alert('❌ Fout! Het juiste antwoord was: Queen\n\nIn de echte app ga je automatisch naar de volgende vraag.');
+                    }, 500);
+                }
+            });
+        });
+    </script>
+
+    <style>
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        a {
+            color: #1db954;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        ul, ol {
+            line-height: 1.6;
+        }
+        
+        li {
+            margin-bottom: 5px;
+        }
+    </style>
+</body>
+</html>
