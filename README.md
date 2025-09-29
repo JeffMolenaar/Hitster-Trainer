@@ -1,2 +1,128 @@
 # Hitster-Trainer
-Hitster (Bordspel) trainer
+Hitster (Bordspel) trainer - Train jezelf in het herkennen van hits, artiesten en jaartallen!
+
+## Over Hitster Trainer
+
+Deze applicatie helpt je oefenen voor het bordspel Hitster. Je krijgt random vragen over bekende hits en moet raden welke artiest het zingt, uit welk jaar het komt, of wat de titel is. De muziek wordt automatisch afgespeeld via Spotify tijdens elke vraag.
+
+## Features
+
+- 🎵 **50+ bekende hits** uit verschillende decennia
+- 🎯 **3 soorten vragen**: Artiest, jaartal, of songtitel
+- 🎧 **Automatisch afspelen** via Spotify Web Playback SDK
+- 📊 **Score bijhouden** tijdens de quiz
+- 🎨 **Responsive design** voor mobiel en desktop
+- 🔐 **Veilige Spotify authenticatie**
+
+## Setup Instructies
+
+### 1. Spotify App Registreren
+
+1. Ga naar [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Log in met je Spotify account
+3. Klik op "Create App"
+4. Vul de app details in:
+   - **App name**: Hitster Trainer (of eigen keuze)
+   - **App description**: Training app voor Hitster bordspel
+   - **Website**: Je website URL (of gebruik http://localhost:3000)
+   - **Redirect URIs**: Voeg toe: `http://localhost:3000/callback.html` (en je productie URL als je die hebt)
+5. Accepteer de Spotify Developer Terms of Service
+6. Klik "Save"
+
+### 2. Client ID Configureren
+
+1. Kopieer de **Client ID** van je Spotify app
+2. Open `spotify-auth.js` in een teksteditor
+3. Vervang `'your_spotify_client_id_here'` met je echte Client ID:
+   ```javascript
+   this.clientId = 'jouw_client_id_hier'; // Vervang met je Client ID
+   ```
+
+### 3. Applicatie Draaien
+
+#### Optie A: Met een lokale webserver (aanbevolen)
+
+```bash
+# Met Python (als je Python hebt geïnstalleerd)
+python -m http.server 3000
+
+# Of met Node.js (als je Node.js hebt geïnstalleerd)
+npx serve -p 3000
+
+# Of met PHP (als je PHP hebt geïnstalleerd)
+php -S localhost:3000
+```
+
+#### Optie B: Direct bestand openen
+
+Je kunt ook `index.html` direct in je browser openen, maar sommige browsers blokkeren lokale bestanden voor veiligheidsredenen.
+
+### 4. Applicatie Gebruiken
+
+1. Open http://localhost:3000 in je browser
+2. Klik op "Verbind met Spotify"
+3. Log in met je Spotify account
+4. Geef toestemming voor de benodigde rechten
+5. Je wordt teruggeleid naar de app
+6. Begin met de quiz!
+
+## Hoe te Spelen
+
+1. **Start de quiz** - Je krijgt 10 willekeurige vragen
+2. **Luister naar het nummer** - Klik op "▶️ Speel af" om het nummer te horen
+3. **Kies het juiste antwoord** - Selecteer uit 4 opties
+4. **Zie je resultaat** - Direct feedback na elke vraag
+5. **Bekijk je eindscore** - Na 10 vragen zie je je totaalscore
+
+## Technische Details
+
+### Stack
+- **Frontend**: HTML, CSS, JavaScript (Vanilla)
+- **API**: Spotify Web API + Web Playback SDK
+- **Authenticatie**: Spotify OAuth 2.0
+- **Data**: JSON database met 50+ bekende hits
+
+### Benodigde Spotify Rechten
+- `streaming` - Voor het afspelen van muziek
+- `user-read-email` - Voor gebruikersprofiel
+- `user-read-private` - Voor gebruikersprofiel
+- `user-read-playback-state` - Voor playback status
+- `user-modify-playback-state` - Voor playback controle
+
+### Browser Compatibiliteit
+- Chrome 54+
+- Firefox 52+
+- Safari 14+
+- Edge 79+
+
+## Song Database
+
+De applicatie bevat 50+ bekende hits van artiesten zoals:
+- Queen, The Beatles, Michael Jackson
+- ABBA, Led Zeppelin, Pink Floyd
+- Nirvana, Coldplay, Adele
+- En veel meer uit verschillende decennia!
+
+## Troubleshooting
+
+### "Client ID niet geconfigureerd"
+- Zorg ervoor dat je de Client ID hebt ingevuld in `spotify-auth.js`
+
+### "Kan nummer niet afspelen"
+- Controleer of je Spotify Premium hebt (vereist voor Web Playback SDK)
+- Zorg dat andere Spotify apps gesloten zijn
+- Herlaad de pagina en probeer opnieuw
+
+### "Redirect URI mismatch"
+- Controleer of de redirect URI in je Spotify app overeenkomt met de URL van je applicatie
+
+## Contributing
+
+Wil je meer songs toevoegen of features implementeren? Check de code in:
+- `hitster-songs.js` - Voor meer songs
+- `quiz.js` - Voor quiz logica
+- `style.css` - Voor styling aanpassingen
+
+## License
+
+Dit project is open source en bedoeld voor educatieve doeleinden.
