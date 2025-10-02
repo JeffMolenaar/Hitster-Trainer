@@ -409,20 +409,68 @@ class SpotifyIDLookup {
     }
 
     // Save results to hitster-songs.js format
-    saveResults() {
+    async saveResults() {
         const finalResults = this.getFinalResults();
-        const jsContent = `// Hitster Songs Database\nconst hitsterSongs = ${JSON.stringify(finalResults, null, 4)};\n`;
         
-        // Create download
-        const blob = new Blob([jsContent], { type: 'application/javascript' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'hitster-songs.js';
-        a.click();
-        URL.revokeObjectURL(url);
+        // Ask for confirmation
+        const confirmed = confirm(
+            `🔄 Weet je het zeker?\n\n` +
+            `Dit overschrijft het huidige hitster-songs.js bestand op de server!\n\n` +
+            `Aantal nummers: ${finalResults.length}\n` +
+            `Gevonden: ${this.stats.found}\n` +
+            `Niet gevonden: ${this.stats.notFound}\n\n` +
+            `Er wordt automatisch een backup gemaakt.`
+        );
+        
+        if (!confirmed) {
+            return;
+        }
 
-        alert('✅ hitster-songs.js gedownload! Upload dit bestand naar je project.');
+        // Show loading
+        const originalText = event.target.textContent;
+        event.target.textContent = '⏳ Opslaan...';
+        event.target.disabled = true;
+
+        try {
+            // Secret key for basic security (you should change this!)
+            const SECRET_KEY = 'hitster-admin-2024';
+            
+            const response = await fetch('update-songs.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    songs: finalResults,
+                    secret: SECRET_KEY
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Upload failed');
+            }
+
+            // Success!
+            alert(
+                `✅ Succesvol opgeslagen!\n\n` +
+                `${result.songCount} nummers bijgewerkt\n` +
+                `Backup: ${result.backup}\n` +
+                `Tijd: ${result.timestamp}\n\n` +
+                `De pagina wordt nu herladen...`
+            );
+
+            // Reload the page to use the new songs
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+
+        } catch (error) {
+            alert(`❌ Fout bij opslaan:\n\n${error.message}\n\nProbeer het opnieuw of gebruik de Download knop.`);
+            event.target.textContent = originalText;
+            event.target.disabled = false;
+        }
     }
 
     // Download as JSON
@@ -432,7 +480,21 @@ class SpotifyIDLookup {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'hitster-songs.json';
+        a.download = 'hitster-songs-backup-' + new Date().toISOString().split('T')[0] + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Download as JS file
+    downloadJS() {
+        const finalResults = this.getFinalResults();
+        const jsContent = `// Hitster Songs Database\n// Backup created: ${new Date().toISOString()}\nconst hitsterSongs = ${JSON.stringify(finalResults, null, 4)};\n`;
+        
+        const blob = new Blob([jsContent], { type: 'application/javascript' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'hitster-songs-backup-' + new Date().toISOString().split('T')[0] + '.js';
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -524,6 +586,10 @@ function saveResults() {
 
 function downloadJSON() {
     lookupTool.downloadJSON();
+}
+
+function downloadJS() {
+    lookupTool.downloadJS();
 }
 
 function copyToClipboard() {
