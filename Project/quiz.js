@@ -1,82 +1,195 @@
-// Quiz logic for Hitster Trainer
+// Quiz logic for Hitster Trainer - 3-Step Question System
 class HitsterQuiz {
     constructor() {
-        this.currentSong = null;
-        this.currentQuestion = 0;
+        this.gameMode = 'medium'; // 'easy', 'medium', 'hard'
+        this.currentSongIndex = 0;
+        this.currentStep = 1; // 1 = artist, 2 = title, 3 = year
         this.score = 0;
-        this.totalQuestions = 10;
-        this.questions = [];
+        this.songsInQuiz = [];
+        this.currentSong = null;
         this.isPlaying = false;
-        this.questionTypes = ['artist', 'year', 'title'];
+        
+        // Statistics
+        this.stats = {
+            artistsCorrect: 0,
+            titlesCorrect: 0,
+            yearsCorrect: 0
+        };
         
         this.bindEvents();
     }
 
     bindEvents() {
         document.getElementById('play-btn').addEventListener('click', () => this.togglePlayback());
-        document.getElementById('next-btn').addEventListener('click', () => this.nextQuestion());
-        document.getElementById('restart-btn').addEventListener('click', () => this.startQuiz());
+        document.getElementById('next-btn').addEventListener('click', () => this.nextStep());
+        document.getElementById('restart-btn').addEventListener('click', () => this.restartQuiz());
+        document.getElementById('new-mode-btn').addEventListener('click', () => this.backToModeSelection());
+        document.getElementById('back-to-menu-btn').addEventListener('click', () => this.backToModeSelection());
     }
 
-    // Start a new quiz
-    startQuiz() {
-        this.currentQuestion = 0;
+    // Get number of songs based on game mode
+    getSongsCount() {
+        const counts = {
+            'easy': 5,
+            'medium': 10,
+            'hard': 15
+        };
+        return counts[this.gameMode] || 10;
+    }
+
+    // Start a new quiz with selected mode
+    startQuiz(mode = 'medium') {
+        this.gameMode = mode;
+        this.currentSongIndex = 0;
+        this.currentStep = 1;
         this.score = 0;
-        this.questions = this.generateQuestions();
+        this.stats = {
+            artistsCorrect: 0,
+            titlesCorrect: 0,
+            yearsCorrect: 0
+        };
         
+        // Generate random songs for this quiz
+        this.songsInQuiz = this.generateSongList();
+        
+        // Show quiz section
         document.getElementById('final-score').classList.add('hidden');
         document.getElementById('quiz-section').classList.remove('hidden');
         
-        this.showQuestion();
+        // Load first song
+        this.loadSong();
     }
 
-    // Generate random questions for the quiz
-    generateQuestions() {
-        const questions = [];
-        const usedSongs = new Set();
+    // Restart quiz with same mode
+    restartQuiz() {
+        this.startQuiz(this.gameMode);
+    }
+
+    // Go back to mode selection
+    backToModeSelection() {
+        document.getElementById('main-section').classList.add('hidden');
+        document.getElementById('mode-selection').classList.remove('hidden');
         
-        for (let i = 0; i < this.totalQuestions; i++) {
-            let song;
-            do {
-                song = hitsterSongs[Math.floor(Math.random() * hitsterSongs.length)];
-            } while (usedSongs.has(song.spotifyId));
-            
-            usedSongs.add(song.spotifyId);
-            
-            const questionType = this.questionTypes[Math.floor(Math.random() * this.questionTypes.length)];
-            
-            questions.push({
-                song: song,
-                type: questionType,
-                answers: this.generateAnswers(song, questionType)
-            });
+        // Stop any playing music
+        if (window.spotifyAuth) {
+            window.spotifyAuth.pausePlayback();
+        }
+    }
+
+    // Generate random song list for quiz
+    generateSongList() {
+        const count = this.getSongsCount();
+        const songs = [];
+        const usedIndices = new Set();
+        
+        while (songs.length < count) {
+            const randomIndex = Math.floor(Math.random() * hitsterSongs.length);
+            if (!usedIndices.has(randomIndex)) {
+                usedIndices.add(randomIndex);
+                songs.push(hitsterSongs[randomIndex]);
+            }
         }
         
-        return questions;
+        return songs;
     }
 
-    // Generate multiple choice answers for a question
-    generateAnswers(correctSong, questionType) {
+    // Load current song and show first question
+    loadSong() {
+        this.currentSong = this.songsInQuiz[this.currentSongIndex];
+        this.currentStep = 1;
+        
+        // Update progress indicators
+        this.updateProgressUI();
+        
+        // Show question
+        this.showQuestion();
+        
+        // Reset and play song
+        this.isPlaying = false;
+        this.updatePlayButton();
+        this.playCurrentSong();
+    }
+
+    // Update progress UI
+    updateProgressUI() {
+        const totalSongs = this.getSongsCount();
+        const maxScore = totalSongs * 3;
+        
+        document.getElementById('current-score').textContent = this.score;
+        document.getElementById('song-number').textContent = `${this.currentSongIndex + 1}/${totalSongs}`;
+        document.getElementById('question-step').textContent = `${this.currentStep}/3`;
+    }
+
+    // Show current question based on step
+    showQuestion() {
+        // Hide result section
+        document.getElementById('result-section').classList.add('hidden');
+        
+        // Set question text based on step
+        let questionText = '';
+        let questionType = '';
+        
+        switch (this.currentStep) {
+            case 1:
+                questionText = '🎤 Wie is de artiest?';
+                questionType = 'artist';
+                break;
+            case 2:
+                questionText = '🎵 Wat is de titel?';
+                questionType = 'title';
+                break;
+            case 3:
+                questionText = '📅 Uit welk jaar?';
+                questionType = 'year';
+                break;
+        }
+        
+        document.getElementById('question-text').textContent = questionText;
+        
+        // Generate answer options
+        const answers = this.generateAnswers(questionType);
+        
+        // Render answer buttons
+        const answersContainer = document.getElementById('answers');
+        answersContainer.innerHTML = '';
+        
+        answers.forEach((answer) => {
+            const button = document.createElement('button');
+            button.className = 'answer-btn';
+            button.textContent = answer.text;
+            button.addEventListener('click', () => this.selectAnswer(answer, questionType));
+            answersContainer.appendChild(button);
+        });
+    }
+
+    // Generate answer options for current question
+    generateAnswers(questionType) {
         const answers = [];
         let correctAnswer;
         
+        // Get correct answer
         switch (questionType) {
             case 'artist':
-                correctAnswer = correctSong.artist;
-                break;
-            case 'year':
-                correctAnswer = correctSong.year.toString();
+                correctAnswer = this.currentSong.artist;
                 break;
             case 'title':
-                correctAnswer = correctSong.title;
+                correctAnswer = this.currentSong.title;
+                break;
+            case 'year':
+                correctAnswer = this.currentSong.year.toString();
                 break;
         }
         
+        // Add correct answer
         answers.push({ text: correctAnswer, isCorrect: true });
         
-        // Generate wrong answers
+        // Generate 3 wrong answers
         const wrongAnswers = new Set();
-        while (wrongAnswers.size < 3) {
+        let attempts = 0;
+        const maxAttempts = 100;
+        
+        while (wrongAnswers.size < 3 && attempts < maxAttempts) {
+            attempts++;
             const randomSong = hitsterSongs[Math.floor(Math.random() * hitsterSongs.length)];
             let wrongAnswer;
             
@@ -84,29 +197,26 @@ class HitsterQuiz {
                 case 'artist':
                     wrongAnswer = randomSong.artist;
                     break;
-                case 'year':
-                    wrongAnswer = randomSong.year.toString();
-                    break;
                 case 'title':
                     wrongAnswer = randomSong.title;
                     break;
+                case 'year':
+                    wrongAnswer = randomSong.year.toString();
+                    break;
             }
             
-            if (wrongAnswer !== correctAnswer) {
+            // Make sure it's different from correct answer and not duplicate
+            if (wrongAnswer !== correctAnswer && !wrongAnswers.has(wrongAnswer)) {
                 wrongAnswers.add(wrongAnswer);
+                answers.push({ text: wrongAnswer, isCorrect: false });
             }
         }
-        
-        // Add wrong answers
-        wrongAnswers.forEach(answer => {
-            answers.push({ text: answer, isCorrect: false });
-        });
         
         // Shuffle answers
         return this.shuffleArray(answers);
     }
 
-    // Utility function to shuffle array
+    // Shuffle array utility
     shuffleArray(array) {
         const shuffled = [...array];
         for (let i = shuffled.length - 1; i > 0; i--) {
@@ -116,104 +226,103 @@ class HitsterQuiz {
         return shuffled;
     }
 
-    // Show current question
-    async showQuestion() {
-        const question = this.questions[this.currentQuestion];
-        this.currentSong = question.song;
-        
-        // Update UI
-        document.getElementById('question-number').textContent = this.currentQuestion + 1;
-        document.getElementById('current-score').textContent = this.score;
-        
-        // Hide result section
-        document.getElementById('result-section').classList.add('hidden');
-        
-        // Set question text
-        let questionText;
-        switch (question.type) {
-            case 'artist':
-                questionText = 'Welke artiest zingt dit nummer?';
-                break;
-            case 'year':
-                questionText = 'Uit welk jaar komt dit nummer?';
-                break;
-            case 'title':
-                questionText = 'Wat is de titel van dit nummer?';
-                break;
-        }
-        
-        document.getElementById('question-text').textContent = questionText;
-        
-        // Generate answer buttons
-        const answersContainer = document.getElementById('answers');
-        answersContainer.innerHTML = '';
-        
-        question.answers.forEach((answer, index) => {
-            const button = document.createElement('button');
-            button.className = 'answer-btn';
-            button.textContent = answer.text;
-            button.addEventListener('click', () => this.selectAnswer(answer, button));
-            answersContainer.appendChild(button);
-        });
-        
-        // Reset play button
-        this.isPlaying = false;
-        this.updatePlayButton();
-        
-        // Auto-play the song if possible
-        this.playCurrentSong();
-    }
-
-    // Select an answer
-    selectAnswer(selectedAnswer, buttonElement) {
-        const question = this.questions[this.currentQuestion];
-        
+    // Handle answer selection
+    selectAnswer(selectedAnswer, questionType) {
         // Disable all buttons
         const answerButtons = document.querySelectorAll('.answer-btn');
         answerButtons.forEach(btn => {
-            btn.classList.add('disabled');
+            btn.disabled = true;
             btn.style.pointerEvents = 'none';
-        });
-        
-        // Highlight correct and incorrect answers
-        answerButtons.forEach(btn => {
-            const answer = question.answers.find(a => a.text === btn.textContent);
-            if (answer.isCorrect) {
+            
+            // Highlight correct answer
+            if (btn.textContent === this.getCorrectAnswerText(questionType)) {
                 btn.classList.add('correct');
-            } else if (btn === buttonElement) {
+            } else if (btn.textContent === selectedAnswer.text && !selectedAnswer.isCorrect) {
                 btn.classList.add('incorrect');
             }
         });
         
-        // Update score
+        // Update score and stats
         if (selectedAnswer.isCorrect) {
             this.score++;
-            document.getElementById('result-text').textContent = '🎉 Correct!';
+            
+            // Update stats
+            switch (questionType) {
+                case 'artist':
+                    this.stats.artistsCorrect++;
+                    break;
+                case 'title':
+                    this.stats.titlesCorrect++;
+                    break;
+                case 'year':
+                    this.stats.yearsCorrect++;
+                    break;
+            }
+            
+            document.getElementById('result-text').textContent = '✅ Correct!';
             document.getElementById('result-text').style.color = '#1db954';
         } else {
             document.getElementById('result-text').textContent = '❌ Fout!';
             document.getElementById('result-text').style.color = '#e22134';
         }
         
-        // Show correct answer info
-        document.getElementById('correct-answer').textContent = 
-            `${this.currentSong.artist} - "${this.currentSong.title}" (${this.currentSong.year})`;
+        // Show result detail
+        let resultDetail = '';
+        switch (questionType) {
+            case 'artist':
+                resultDetail = `Artiest: ${this.currentSong.artist}`;
+                break;
+            case 'title':
+                resultDetail = `Titel: ${this.currentSong.title}`;
+                break;
+            case 'year':
+                resultDetail = `Jaar: ${this.currentSong.year}`;
+                break;
+        }
+        document.getElementById('result-detail').textContent = resultDetail;
+        
+        // Update score display
+        this.updateProgressUI();
         
         // Show result section
         document.getElementById('result-section').classList.remove('hidden');
         
-        // Update score display
-        document.getElementById('current-score').textContent = this.score;
+        // Update next button text
+        const nextBtn = document.getElementById('next-btn');
+        if (this.currentStep < 3) {
+            nextBtn.textContent = 'Volgende vraag';
+        } else if (this.currentSongIndex < this.getSongsCount() - 1) {
+            nextBtn.textContent = 'Volgend nummer';
+        } else {
+            nextBtn.textContent = 'Toon resultaten';
+        }
     }
 
-    // Move to next question or show final results
-    nextQuestion() {
-        this.currentQuestion++;
-        
-        if (this.currentQuestion >= this.totalQuestions) {
-            this.showFinalResults();
-        } else {
+    // Get correct answer text for question type
+    getCorrectAnswerText(questionType) {
+        switch (questionType) {
+            case 'artist':
+                return this.currentSong.artist;
+            case 'title':
+                return this.currentSong.title;
+            case 'year':
+                return this.currentSong.year.toString();
+        }
+    }
+
+    // Move to next step or song
+    nextStep() {
+        if (this.currentStep < 3) {
+            // Next question for same song
+            this.currentStep++;
             this.showQuestion();
+        } else if (this.currentSongIndex < this.getSongsCount() - 1) {
+            // Next song
+            this.currentSongIndex++;
+            this.loadSong();
+        } else {
+            // Quiz finished
+            this.showFinalResults();
         }
     }
 
@@ -222,40 +331,35 @@ class HitsterQuiz {
         document.getElementById('quiz-section').classList.add('hidden');
         document.getElementById('final-score').classList.remove('hidden');
         
-        const percentage = Math.round((this.score / this.totalQuestions) * 100);
-        document.getElementById('final-score-text').textContent = `${this.score}`;
-        
         // Stop playback
         if (window.spotifyAuth) {
             window.spotifyAuth.pausePlayback();
         }
         
-        // Add some encouraging text based on score
-        const finalScoreSection = document.getElementById('final-score');
+        const maxScore = this.getSongsCount() * 3;
+        const percentage = Math.round((this.score / maxScore) * 100);
+        
+        // Update stats display
+        document.getElementById('final-score-text').textContent = `${this.score}/${maxScore}`;
+        document.getElementById('artists-correct').textContent = `${this.stats.artistsCorrect}/${this.getSongsCount()}`;
+        document.getElementById('titles-correct').textContent = `${this.stats.titlesCorrect}/${this.getSongsCount()}`;
+        document.getElementById('years-correct').textContent = `${this.stats.yearsCorrect}/${this.getSongsCount()}`;
+        
+        // Encouragement message
         let encouragement = '';
-        
-        if (percentage >= 80) {
-            encouragement = '🎵 Geweldig! Je bent een echte muziekkenner! 🎵';
+        if (percentage >= 90) {
+            encouragement = '� Perfect! Je bent een échte Hitster legende! �';
+        } else if (percentage >= 75) {
+            encouragement = '� Geweldig! Je bent een muziekkenner! �';
         } else if (percentage >= 60) {
-            encouragement = '🎶 Goed gedaan! Je kent je muziek! 🎶';
+            encouragement = '🎵 Goed gedaan! Je kent je muziek! �';
         } else if (percentage >= 40) {
-            encouragement = '🎵 Niet slecht! Blijf oefenen! 🎵';
+            encouragement = '🎶 Niet slecht! Blijf oefenen! 🎶';
         } else {
-            encouragement = '🎶 Tijd om meer muziek te ontdekken! 🎶';
+            encouragement = '💪 Nog veel te leren! Probeer het nog eens! 💪';
         }
         
-        // Check if encouragement element exists, if not create it
-        let encouragementElement = finalScoreSection.querySelector('.encouragement');
-        if (!encouragementElement) {
-            encouragementElement = document.createElement('p');
-            encouragementElement.className = 'encouragement';
-            encouragementElement.style.marginTop = '20px';
-            encouragementElement.style.fontSize = '18px';
-            encouragementElement.style.color = '#1db954';
-            finalScoreSection.insertBefore(encouragementElement, finalScoreSection.querySelector('#restart-btn'));
-        }
-        
-        encouragementElement.textContent = encouragement;
+        document.getElementById('encouragement-text').textContent = encouragement;
     }
 
     // Play current song

@@ -18,6 +18,14 @@ class HitsterApp {
         document.getElementById('login-btn').addEventListener('click', () => this.login());
         document.getElementById('logout-btn').addEventListener('click', () => this.logout());
 
+        // Bind game mode selection
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const mode = e.target.getAttribute('data-mode');
+                this.startGame(mode);
+            });
+        });
+
         // Check authentication status
         this.checkAuthStatus();
 
@@ -36,11 +44,21 @@ class HitsterApp {
 
     // Update authentication status
     async updateAuthStatus() {
-        if (window.spotifyAuth.isAuthenticated() && document.getElementById('main-section').classList.contains('hidden')) {
-            await this.showMainApp();
+        if (window.spotifyAuth.isAuthenticated() && 
+            document.getElementById('mode-selection').classList.contains('hidden') &&
+            document.getElementById('main-section').classList.contains('hidden')) {
+            await this.showModeSelection();
         } else if (!window.spotifyAuth.isAuthenticated() && document.getElementById('auth-section').classList.contains('hidden')) {
             this.showAuthSection();
         }
+    }
+
+    // Start game with selected mode
+    startGame(mode) {
+        console.log(`Starting game with mode: ${mode}`);
+        document.getElementById('mode-selection').classList.add('hidden');
+        document.getElementById('main-section').classList.remove('hidden');
+        window.hitsterQuiz.startQuiz(mode);
     }
 
     // Handle login
@@ -66,12 +84,13 @@ class HitsterApp {
     // Show authentication section
     showAuthSection() {
         document.getElementById('auth-section').classList.remove('hidden');
+        document.getElementById('mode-selection').classList.add('hidden');
         document.getElementById('main-section').classList.add('hidden');
         document.getElementById('auth-status').innerHTML = '';
     }
 
-    // Show main application
-    async showMainApp() {
+    // Show mode selection screen
+    async showModeSelection() {
         try {
             // Get user profile
             const profile = await window.spotifyAuth.getUserProfile();
@@ -81,22 +100,23 @@ class HitsterApp {
                 document.getElementById('user-info').textContent = 
                     `Welkom, ${profile.display_name || profile.id}!`;
                 
-                // Hide auth section and show main app
+                // Hide auth section and show mode selection
                 document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('main-section').classList.remove('hidden');
-                
-                // Start the quiz if not already started
-                if (window.hitsterQuiz.currentQuestion === 0 && window.hitsterQuiz.questions.length === 0) {
-                    window.hitsterQuiz.startQuiz();
-                }
+                document.getElementById('main-section').classList.add('hidden');
+                document.getElementById('mode-selection').classList.remove('hidden');
             } else {
                 throw new Error('Failed to get user profile');
             }
         } catch (error) {
-            console.error('Error showing main app:', error);
+            console.error('Error showing mode selection:', error);
             document.getElementById('auth-status').innerHTML = 
                 '<p style="color: #e22134;">❌ Fout bij het verbinden met Spotify. Probeer opnieuw.</p>';
         }
+    }
+
+    // Show main application (now redirects to mode selection)
+    async showMainApp() {
+        await this.showModeSelection();
     }
 
     // Show setup instructions for developers

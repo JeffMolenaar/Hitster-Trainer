@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hitster Trainer</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -10,34 +10,76 @@
     <div id="app">
         <!-- Auth Section -->
         <div id="auth-section" class="section">
-            <h1>Hitster Trainer</h1>
+            <h1>🎵 Hitster Trainer</h1>
             <p>Train jezelf in het herkennen van hits, artiesten en jaartallen!</p>
             <button id="login-btn" class="btn btn-primary">Verbind met Spotify</button>
             <div id="auth-status"></div>
         </div>
 
-        <!-- Main App Section -->
-        <div id="main-section" class="section hidden">
+        <!-- Game Mode Selection -->
+        <div id="mode-selection" class="section hidden">
             <header>
-                <h1>Hitster Trainer</h1>
+                <h1>🎵 Hitster Trainer</h1>
                 <div id="user-info"></div>
                 <button id="logout-btn" class="btn btn-secondary">Uitloggen</button>
             </header>
 
+            <h2>Kies je moeilijkheidsgraad</h2>
+            <div class="mode-cards">
+                <div class="mode-card" data-mode="easy">
+                    <div class="mode-icon">🎵</div>
+                    <h3>Easy</h3>
+                    <p>5 nummers</p>
+                    <p class="mode-detail">15 vragen totaal</p>
+                    <button class="btn btn-primary mode-btn" data-mode="easy">Start Easy</button>
+                </div>
+                <div class="mode-card" data-mode="medium">
+                    <div class="mode-icon">🎶</div>
+                    <h3>Medium</h3>
+                    <p>10 nummers</p>
+                    <p class="mode-detail">30 vragen totaal</p>
+                    <button class="btn btn-primary mode-btn" data-mode="medium">Start Medium</button>
+                </div>
+                <div class="mode-card" data-mode="hard">
+                    <div class="mode-icon">🎸</div>
+                    <h3>Hard</h3>
+                    <p>15 nummers</p>
+                    <p class="mode-detail">45 vragen totaal</p>
+                    <button class="btn btn-primary mode-btn" data-mode="hard">Start Hard</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Quiz Section -->
+        <div id="main-section" class="section hidden">
+            <header>
+                <h1>🎵 Hitster Trainer</h1>
+                <button id="back-to-menu-btn" class="btn btn-secondary">← Menu</button>
+            </header>
+
             <div id="quiz-section">
                 <div id="score-board">
-                    <span>Score: <span id="current-score">0</span></span>
-                    <span>Vraag: <span id="question-number">1</span>/10</span>
+                    <div class="score-item">
+                        <span class="score-label">Score</span>
+                        <span class="score-value" id="current-score">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Nummer</span>
+                        <span class="score-value" id="song-number">1/5</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Vraag</span>
+                        <span class="score-value" id="question-step">1/3</span>
+                    </div>
                 </div>
 
                 <div id="question-container">
                     <div id="audio-player">
                         <button id="play-btn" class="btn btn-primary">▶️ Speel af</button>
-                        <div id="audio-controls"></div>
                     </div>
 
                     <div id="question">
-                        <h2 id="question-text">Welke artiest zingt dit nummer?</h2>
+                        <h2 id="question-text">Wie is de artiest?</h2>
                         <div id="answers">
                             <!-- Answer buttons will be dynamically generated -->
                         </div>
@@ -46,15 +88,36 @@
 
                 <div id="result-section" class="hidden">
                     <h2 id="result-text"></h2>
-                    <p id="correct-answer"></p>
-                    <button id="next-btn" class="btn btn-primary">Volgende vraag</button>
+                    <p id="result-detail"></p>
+                    <button id="next-btn" class="btn btn-primary">Volgende</button>
                 </div>
             </div>
 
             <div id="final-score" class="hidden">
-                <h2>Quiz voltooid!</h2>
-                <p>Je eindresultaat: <span id="final-score-text"></span>/10</p>
-                <button id="restart-btn" class="btn btn-primary">Nieuwe quiz</button>
+                <h2>🎉 Quiz voltooid!</h2>
+                <div class="final-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="final-score-text">0</span>
+                        <span class="stat-label">Totaal score</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="artists-correct">0</span>
+                        <span class="stat-label">Artiesten goed</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="titles-correct">0</span>
+                        <span class="stat-label">Titels goed</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="years-correct">0</span>
+                        <span class="stat-label">Jaren goed</span>
+                    </div>
+                </div>
+                <p class="encouragement" id="encouragement-text"></p>
+                <div class="final-buttons">
+                    <button id="restart-btn" class="btn btn-primary">Zelfde mode</button>
+                    <button id="new-mode-btn" class="btn btn-secondary">Andere mode</button>
+                </div>
             </div>
         </div>
     </div>
