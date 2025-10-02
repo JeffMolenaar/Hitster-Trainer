@@ -517,3 +517,15 @@ function resetTool() {
     lookupTool.results = [];
     lookupTool.songs = [];
 }
+
+function saveResults() {
+    lookupTool.saveResults();
+}
+
+function downloadJSON() {
+    lookupTool.downloadJSON();
+}
+
+function copyToClipboard() {
+    lookupTool.copyToClipboard();
+}
