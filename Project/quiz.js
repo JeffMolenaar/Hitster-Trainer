@@ -8,14 +8,14 @@ class HitsterQuiz {
         this.songsInQuiz = [];
         this.currentSong = null;
         this.isPlaying = false;
-        
+
         // Statistics
         this.stats = {
             artistsCorrect: 0,
             titlesCorrect: 0,
             yearsCorrect: 0
         };
-        
+
         this.bindEvents();
     }
 
@@ -48,14 +48,14 @@ class HitsterQuiz {
             titlesCorrect: 0,
             yearsCorrect: 0
         };
-        
+
         // Generate random songs for this quiz
         this.songsInQuiz = this.generateSongList();
-        
+
         // Show quiz section
         document.getElementById('final-score').classList.add('hidden');
         document.getElementById('quiz-section').classList.remove('hidden');
-        
+
         // Load first song
         this.loadSong();
     }
@@ -69,7 +69,7 @@ class HitsterQuiz {
     backToModeSelection() {
         document.getElementById('main-section').classList.add('hidden');
         document.getElementById('mode-selection').classList.remove('hidden');
-        
+
         // Stop any playing music
         if (window.spotifyAuth) {
             window.spotifyAuth.pausePlayback();
@@ -81,29 +81,86 @@ class HitsterQuiz {
         const count = this.getSongsCount();
         const songs = [];
         const usedIndices = new Set();
-        
-        while (songs.length < count) {
-            const randomIndex = Math.floor(Math.random() * hitsterSongs.length);
+
+        // Filter songs that have a valid Spotify ID
+        const validSongs = hitsterSongs.filter(song => 
+            song.spotifyId && song.spotifyId.trim() !== ""
+        );
+
+        // Check if we have enough valid songs
+        if (validSongs.length < count) {
+            console.warn(`Not enough songs with Spotify IDs. Requested: ${count}, Available: ${validSongs.length}`);
+            // Continue with available songs
+        }
+
+        // Create index map for valid songs
+        const validIndices = [];
+        hitsterSongs.forEach((song, index) => {
+            if (song.spotifyId && song.spotifyId.trim() !== "") {
+                validIndices.push(index);
+            }
+        });
+
+        while (songs.length < count && songs.length < validSongs.length) {
+            const randomValidIndex = Math.floor(Math.random() * validIndices.length);
+            const randomIndex = validIndices[randomValidIndex];
+            
             if (!usedIndices.has(randomIndex)) {
                 usedIndices.add(randomIndex);
                 songs.push(hitsterSongs[randomIndex]);
             }
         }
-        
+
         return songs;
     }
 
     // Load current song and show first question
     loadSong() {
         this.currentSong = this.songsInQuiz[this.currentSongIndex];
-        this.currentStep = 1;
         
+        // Validate that song has Spotify ID - skip if not
+        if (!this.currentSong.spotifyId || this.currentSong.spotifyId.trim() === "") {
+            console.warn(`Song "${this.currentSong.title}" has no Spotify ID, skipping...`);
+            
+            // Try to find next valid song
+            let foundValidSong = false;
+            let attempts = 0;
+            const maxAttempts = this.songsInQuiz.length;
+            
+            while (!foundValidSong && attempts < maxAttempts) {
+                this.currentSongIndex++;
+                attempts++;
+                
+                // If we reached the end, go to final score
+                if (this.currentSongIndex >= this.songsInQuiz.length) {
+                    console.log('No more valid songs available');
+                    this.showFinalScore();
+                    return;
+                }
+                
+                this.currentSong = this.songsInQuiz[this.currentSongIndex];
+                if (this.currentSong.spotifyId && this.currentSong.spotifyId.trim() !== "") {
+                    foundValidSong = true;
+                }
+            }
+            
+            // If still no valid song found, end quiz
+            if (!foundValidSong) {
+                console.error('Could not find any song with valid Spotify ID');
+                alert('❌ Geen nummers met Spotify ID beschikbaar. Probeer de song database bij te werken.');
+                this.backToModeSelection();
+                return;
+            }
+        }
+        
+        this.currentStep = 1;
+
         // Update progress indicators
         this.updateProgressUI();
-        
+
         // Show question
         this.showQuestion();
-        
+
         // Reset and play song
         this.isPlaying = false;
         this.updatePlayButton();
@@ -114,7 +171,7 @@ class HitsterQuiz {
     updateProgressUI() {
         const totalSongs = this.getSongsCount();
         const maxScore = totalSongs * 3;
-        
+
         document.getElementById('current-score').textContent = this.score;
         document.getElementById('song-number').textContent = `${this.currentSongIndex + 1}/${totalSongs}`;
         document.getElementById('question-step').textContent = `${this.currentStep}/3`;
@@ -124,11 +181,11 @@ class HitsterQuiz {
     showQuestion() {
         // Hide result section
         document.getElementById('result-section').classList.add('hidden');
-        
+
         // Set question text based on step
         let questionText = '';
         let questionType = '';
-        
+
         switch (this.currentStep) {
             case 1:
                 questionText = '🎤 Wie is de artiest?';
@@ -143,16 +200,16 @@ class HitsterQuiz {
                 questionType = 'year';
                 break;
         }
-        
+
         document.getElementById('question-text').textContent = questionText;
-        
+
         // Generate answer options
         const answers = this.generateAnswers(questionType);
-        
+
         // Render answer buttons
         const answersContainer = document.getElementById('answers');
         answersContainer.innerHTML = '';
-        
+
         answers.forEach((answer) => {
             const button = document.createElement('button');
             button.className = 'answer-btn';
@@ -166,7 +223,7 @@ class HitsterQuiz {
     generateAnswers(questionType) {
         const answers = [];
         let correctAnswer;
-        
+
         // Get correct answer
         switch (questionType) {
             case 'artist':
@@ -179,20 +236,20 @@ class HitsterQuiz {
                 correctAnswer = this.currentSong.year.toString();
                 break;
         }
-        
+
         // Add correct answer
         answers.push({ text: correctAnswer, isCorrect: true });
-        
+
         // Generate 3 wrong answers
         const wrongAnswers = new Set();
         let attempts = 0;
         const maxAttempts = 100;
-        
+
         while (wrongAnswers.size < 3 && attempts < maxAttempts) {
             attempts++;
             const randomSong = hitsterSongs[Math.floor(Math.random() * hitsterSongs.length)];
             let wrongAnswer;
-            
+
             switch (questionType) {
                 case 'artist':
                     wrongAnswer = randomSong.artist;
@@ -204,14 +261,14 @@ class HitsterQuiz {
                     wrongAnswer = randomSong.year.toString();
                     break;
             }
-            
+
             // Make sure it's different from correct answer and not duplicate
             if (wrongAnswer !== correctAnswer && !wrongAnswers.has(wrongAnswer)) {
                 wrongAnswers.add(wrongAnswer);
                 answers.push({ text: wrongAnswer, isCorrect: false });
             }
         }
-        
+
         // Shuffle answers
         return this.shuffleArray(answers);
     }
@@ -233,7 +290,7 @@ class HitsterQuiz {
         answerButtons.forEach(btn => {
             btn.disabled = true;
             btn.style.pointerEvents = 'none';
-            
+
             // Highlight correct answer
             if (btn.textContent === this.getCorrectAnswerText(questionType)) {
                 btn.classList.add('correct');
@@ -241,11 +298,11 @@ class HitsterQuiz {
                 btn.classList.add('incorrect');
             }
         });
-        
+
         // Update score and stats
         if (selectedAnswer.isCorrect) {
             this.score++;
-            
+
             // Update stats
             switch (questionType) {
                 case 'artist':
@@ -258,14 +315,14 @@ class HitsterQuiz {
                     this.stats.yearsCorrect++;
                     break;
             }
-            
+
             document.getElementById('result-text').textContent = '✅ Correct!';
             document.getElementById('result-text').style.color = '#1db954';
         } else {
             document.getElementById('result-text').textContent = '❌ Fout!';
             document.getElementById('result-text').style.color = '#e22134';
         }
-        
+
         // Show result detail
         let resultDetail = '';
         switch (questionType) {
@@ -280,13 +337,13 @@ class HitsterQuiz {
                 break;
         }
         document.getElementById('result-detail').textContent = resultDetail;
-        
+
         // Update score display
         this.updateProgressUI();
-        
+
         // Show result section
         document.getElementById('result-section').classList.remove('hidden');
-        
+
         // Update next button text
         const nextBtn = document.getElementById('next-btn');
         if (this.currentStep < 3) {
@@ -330,21 +387,21 @@ class HitsterQuiz {
     showFinalResults() {
         document.getElementById('quiz-section').classList.add('hidden');
         document.getElementById('final-score').classList.remove('hidden');
-        
+
         // Stop playback
         if (window.spotifyAuth) {
             window.spotifyAuth.pausePlayback();
         }
-        
+
         const maxScore = this.getSongsCount() * 3;
         const percentage = Math.round((this.score / maxScore) * 100);
-        
+
         // Update stats display
         document.getElementById('final-score-text').textContent = `${this.score}/${maxScore}`;
         document.getElementById('artists-correct').textContent = `${this.stats.artistsCorrect}/${this.getSongsCount()}`;
         document.getElementById('titles-correct').textContent = `${this.stats.titlesCorrect}/${this.getSongsCount()}`;
         document.getElementById('years-correct').textContent = `${this.stats.yearsCorrect}/${this.getSongsCount()}`;
-        
+
         // Encouragement message
         let encouragement = '';
         if (percentage >= 90) {
@@ -358,7 +415,7 @@ class HitsterQuiz {
         } else {
             encouragement = '💪 Nog veel te leren! Probeer het nog eens! 💪';
         }
-        
+
         document.getElementById('encouragement-text').textContent = encouragement;
     }
 
@@ -368,7 +425,14 @@ class HitsterQuiz {
             console.log('Cannot play: no song selected or not authenticated');
             return;
         }
-        
+
+        // Extra check for Spotify ID
+        if (!this.currentSong.spotifyId || this.currentSong.spotifyId.trim() === "") {
+            console.error('Cannot play: song has no Spotify ID');
+            alert('❌ Dit nummer heeft geen Spotify ID en kan niet afgespeeld worden.');
+            return;
+        }
+
         try {
             const success = await window.spotifyAuth.playTrack(this.currentSong.spotifyId);
             if (success) {
@@ -386,12 +450,12 @@ class HitsterQuiz {
             alert('Spotify is niet verbonden. Log eerst in.');
             return;
         }
-        
+
         if (!this.currentSong) {
             alert('Geen nummer geladen.');
             return;
         }
-        
+
         try {
             if (this.isPlaying) {
                 await window.spotifyAuth.pausePlayback();
@@ -399,7 +463,7 @@ class HitsterQuiz {
             } else {
                 await this.playCurrentSong();
             }
-            
+
             this.updatePlayButton();
         } catch (error) {
             console.error('Failed to toggle playback:', error);
