@@ -44,7 +44,7 @@ class HitsterApp {
 
     // Update authentication status
     async updateAuthStatus() {
-        if (window.spotifyAuth.isAuthenticated() && 
+        if (window.spotifyAuth.isAuthenticated() &&
             document.getElementById('mode-selection').classList.contains('hidden') &&
             document.getElementById('main-section').classList.contains('hidden')) {
             await this.showModeSelection();
@@ -69,9 +69,9 @@ class HitsterApp {
             return;
         }
 
-        document.getElementById('auth-status').innerHTML = 
+        document.getElementById('auth-status').innerHTML =
             '<div class="loading"></div> Verbinden met Spotify...';
-        
+
         window.spotifyAuth.login();
     }
 
@@ -94,12 +94,12 @@ class HitsterApp {
         try {
             // Get user profile
             const profile = await window.spotifyAuth.getUserProfile();
-            
+
             if (profile) {
                 // Update user info
-                document.getElementById('user-info').textContent = 
+                document.getElementById('user-info').textContent =
                     `Welkom, ${profile.display_name || profile.id}!`;
-                
+
                 // Hide auth section and show mode selection
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('main-section').classList.add('hidden');
@@ -109,7 +109,7 @@ class HitsterApp {
             }
         } catch (error) {
             console.error('Error showing mode selection:', error);
-            document.getElementById('auth-status').innerHTML = 
+            document.getElementById('auth-status').innerHTML =
                 '<p style="color: #e22134;">❌ Fout bij het verbinden met Spotify. Probeer opnieuw.</p>';
         }
     }
@@ -140,19 +140,19 @@ class HitsterApp {
                 <button onclick="document.getElementById('auth-status').innerHTML=''" style="background: #535353; color: white; border: none; padding: 8px 16px; border-radius: 5px; margin-top: 10px;">Sluiten</button>
             </div>
         `;
-        
+
         document.getElementById('auth-status').innerHTML = instructions;
     }
 
     // Show error message
     showError(message) {
-        document.getElementById('auth-status').innerHTML = 
+        document.getElementById('auth-status').innerHTML =
             `<p style="color: #e22134;">❌ ${message}</p>`;
     }
 
     // Show success message
     showSuccess(message) {
-        document.getElementById('auth-status').innerHTML = 
+        document.getElementById('auth-status').innerHTML =
             `<p style="color: #1db954;">✅ ${message}</p>`;
     }
 }

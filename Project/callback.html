@@ -1,196 +1,204 @@
 <!DOCTYPE html>
 <html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify Authentication - Hitster Trainer</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1db954 0%, #191414 100%);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-        
-        .container {
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-        
-        h1 {
-            color: #1db954;
-            margin-bottom: 20px;
-        }
-        
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #1db954;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .error {
-            color: #e22134;
-            margin-top: 20px;
-        }
-        
-        .success {
-            color: #1db954;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Hitster Trainer</h1>
-        <div id="status">
-            <div class="loading"></div>
-            Authenticatie verwerken...
-        </div>
-    </div>
 
-    <script>
-        // Handle Spotify OAuth callback (supports both PKCE and legacy flows)
-        async function handleCallback() {
-            const statusElement = document.getElementById('status');
-            
-            // Check for authorization code (PKCE flow) in query string
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            
-            if (code) {
-                // PKCE flow - exchange code for token here
-                statusElement.innerHTML = '<div class="loading"></div>🔐 Authenticatie code ontvangen! Tokens worden opgehaald...';
-                
-                const codeVerifier = localStorage.getItem('code_verifier');
-                
-                if (!codeVerifier) {
-                    statusElement.innerHTML = `
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Spotify Authentication - Hitster Trainer</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #1db954 0%, #191414 100%);
+                color: white;
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+            }
+
+            .container {
+                background: rgba(0, 0, 0, 0.8);
+                border-radius: 15px;
+                padding: 40px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            }
+
+            h1 {
+                color: #1db954;
+                margin-bottom: 20px;
+            }
+
+            .loading {
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #1db954;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-right: 10px;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .error {
+                color: #e22134;
+                margin-top: 20px;
+            }
+
+            .success {
+                color: #1db954;
+                margin-top: 20px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>Hitster Trainer</h1>
+            <div id="status">
+                <div class="loading"></div>
+                Authenticatie verwerken...
+            </div>
+        </div>
+
+        <script>
+            // Handle Spotify OAuth callback (supports both PKCE and legacy flows)
+            async function handleCallback() {
+                const statusElement = document.getElementById('status');
+
+                // Check for authorization code (PKCE flow) in query string
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+
+                if (code) {
+                    // PKCE flow - exchange code for token here
+                    statusElement.innerHTML = '<div class="loading"></div>🔐 Authenticatie code ontvangen! Tokens worden opgehaald...';
+
+                    const codeVerifier = localStorage.getItem('code_verifier');
+
+                    if (!codeVerifier) {
+                        statusElement.innerHTML = `
                         <div class="error">
                             ❌ Code verifier niet gevonden. Probeer opnieuw in te loggen.
                             <br><br>
                             <a href="/" style="color: #1db954; text-decoration: none;">← Terug naar hoofdpagina</a>
                         </div>
                     `;
-                    return;
-                }
-                
-                // Exchange code for token
-                try {
-                    const clientId = '8f31b962554b4366b0a594175be737c6'; // Same as in spotify-auth.js
-                    const redirectUri = window.location.origin + '/callback.html';
-                    
-                    const params = new URLSearchParams({
-                        client_id: clientId,
-                        grant_type: 'authorization_code',
-                        code: code,
-                        redirect_uri: redirectUri,
-                        code_verifier: codeVerifier
-                    });
-
-                    const response = await fetch('https://accounts.spotify.com/api/token', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: params
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error_description || 'Token exchange failed');
+                        return;
                     }
 
-                    const data = await response.json();
-                    
-                    // Store tokens
-                    localStorage.setItem('spotify_access_token', data.access_token);
-                    if (data.refresh_token) {
-                        localStorage.setItem('spotify_refresh_token', data.refresh_token);
-                    }
-                    
-                    // Clean up code verifier
-                    localStorage.removeItem('code_verifier');
-                    
-                    // Success!
-                    statusElement.innerHTML = '<div class="success">✅ Succesvol ingelogd! Je wordt doorgestuurd...</div>';
-                    
-                    // Redirect to main app
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 1500);
-                    
-                } catch (error) {
-                    console.error('Token exchange error:', error);
-                    statusElement.innerHTML = `
+                    // Exchange code for token
+                    try {
+                        const clientId = '8f31b962554b4366b0a594175be737c6'; // Same as in spotify-auth.js
+                        const redirectUri = window.location.origin + '/callback.html';
+
+                        const params = new URLSearchParams({
+                            client_id: clientId,
+                            grant_type: 'authorization_code',
+                            code: code,
+                            redirect_uri: redirectUri,
+                            code_verifier: codeVerifier
+                        });
+
+                        const response = await fetch('https://accounts.spotify.com/api/token', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: params
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error_description || 'Token exchange failed');
+                        }
+
+                        const data = await response.json();
+
+                        // Store tokens
+                        localStorage.setItem('spotify_access_token', data.access_token);
+                        if (data.refresh_token) {
+                            localStorage.setItem('spotify_refresh_token', data.refresh_token);
+                        }
+
+                        // Clean up code verifier
+                        localStorage.removeItem('code_verifier');
+
+                        // Success!
+                        statusElement.innerHTML = '<div class="success">✅ Succesvol ingelogd! Je wordt doorgestuurd...</div>';
+
+                        // Redirect to main app
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1500);
+
+                    } catch (error) {
+                        console.error('Token exchange error:', error);
+                        statusElement.innerHTML = `
                         <div class="error">
                             ❌ Fout bij ophalen tokens: ${error.message}
                             <br><br>
                             <a href="/" style="color: #1db954; text-decoration: none;">← Terug naar hoofdpagina</a>
                         </div>
                     `;
+                    }
+
+                    return;
                 }
-                
-                return;
-            }
-            
-            // Check for access token in hash (legacy Implicit Grant flow)
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            
-            if (params.has('access_token')) {
-                // Legacy flow - store the token and redirect
-                const token = params.get('access_token');
-                
-                statusElement.innerHTML = '<div class="success">✅ Succesvol ingelogd! Je wordt doorgestuurd...</div>';
-                
-                localStorage.setItem('spotify_access_token', token);
-                
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 2000);
-                
-            } else if (params.has('error') || urlParams.has('error')) {
-                // Error occurred (check both hash and query)
-                const error = params.get('error') || urlParams.get('error');
-                const errorDescription = params.get('error_description') || urlParams.get('error_description') || error;
-                
-                statusElement.innerHTML = `
+
+                // Check for access token in hash (legacy Implicit Grant flow)
+                const hash = window.location.hash.substring(1);
+                const params = new URLSearchParams(hash);
+
+                if (params.has('access_token')) {
+                    // Legacy flow - store the token and redirect
+                    const token = params.get('access_token');
+
+                    statusElement.innerHTML = '<div class="success">✅ Succesvol ingelogd! Je wordt doorgestuurd...</div>';
+
+                    localStorage.setItem('spotify_access_token', token);
+
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+
+                } else if (params.has('error') || urlParams.has('error')) {
+                    // Error occurred (check both hash and query)
+                    const error = params.get('error') || urlParams.get('error');
+                    const errorDescription = params.get('error_description') || urlParams.get('error_description') || error;
+
+                    statusElement.innerHTML = `
                     <div class="error">
                         ❌ Fout bij inloggen: ${errorDescription}
                         <br><br>
                         <a href="/" style="color: #1db954; text-decoration: none;">← Terug naar hoofdpagina</a>
                     </div>
                 `;
-            } else {
-                // No token or error - something went wrong
-                statusElement.innerHTML = `
+                } else {
+                    // No token or error - something went wrong
+                    statusElement.innerHTML = `
                     <div class="error">
                         ❌ Geen authenticatie gegevens ontvangen.
                         <br><br>
                         <a href="/" style="color: #1db954; text-decoration: none;">← Terug naar hoofdpagina</a>
                     </div>
                 `;
+                }
             }
-        }
 
-        // Run callback handler when page loads
-        document.addEventListener('DOMContentLoaded', handleCallback);
-    </script>
-</body>
+            // Run callback handler when page loads
+            document.addEventListener('DOMContentLoaded', handleCallback);
+        </script>
+    </body>
+
 </html>

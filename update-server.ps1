@@ -20,20 +20,21 @@ if (-not (Test-Path "Project")) {
 
 # Define files to upload
 $filesToUpload = @(
-    "Project/index.html",
-    "Project/callback.html",
-    "Project/app.js",
-    "Project/quiz.js",
-    "Project/spotify-auth.js",
-    "Project/hitster-songs.js",
-    "Project/style.css"
+    "Project\index.html",
+    "Project\callback.html",
+    "Project\app.js",
+    "Project\quiz.js",
+    "Project\spotify-auth.js",
+    "Project\hitster-songs.js",
+    "Project\style.css"
 )
 
 Write-Host "📦 Files to upload:" -ForegroundColor Cyan
 foreach ($file in $filesToUpload) {
     if (Test-Path $file) {
         Write-Host "  ✓ $file" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  ✗ $file (NOT FOUND)" -ForegroundColor Red
     }
 }
@@ -53,18 +54,22 @@ Write-Host "📤 Uploading files to server..." -ForegroundColor Cyan
 $uploadSuccess = $true
 foreach ($file in $filesToUpload) {
     if (Test-Path $file) {
-        Write-Host "  Uploading $file..." -NoNewline
+        $fileName = Split-Path $file -Leaf
+        Write-Host "  Uploading $fileName..." -NoNewline
         
         try {
-            scp $file "${ServerUser}@${ServerIP}:/home/jeffrey/"
+            $result = scp $file "${ServerUser}@${ServerIP}:/home/jeffrey/" 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 Write-Host " ✓" -ForegroundColor Green
-            } else {
+            }
+            else {
                 Write-Host " ✗ Failed" -ForegroundColor Red
+                Write-Host "    Error: $result" -ForegroundColor Red
                 $uploadSuccess = $false
             }
-        } catch {
+        }
+        catch {
             Write-Host " ✗ Error: $_" -ForegroundColor Red
             $uploadSuccess = $false
         }
@@ -80,41 +85,57 @@ if (-not $uploadSuccess) {
 Write-Host ""
 Write-Host "🔧 Setting up files on server..." -ForegroundColor Cyan
 
-# Create the server commands
-$serverCommands = @"
-echo '📁 Moving files to web directory...'
-sudo cp /home/jeffrey/index.html /var/www/hitster-trainer/ 2>/dev/null || echo 'index.html not found'
-sudo cp /home/jeffrey/callback.html /var/www/hitster-trainer/ 2>/dev/null || echo 'callback.html not found'
-sudo cp /home/jeffrey/app.js /var/www/hitster-trainer/ 2>/dev/null || echo 'app.js not found'
-sudo cp /home/jeffrey/quiz.js /var/www/hitster-trainer/ 2>/dev/null || echo 'quiz.js not found'
-sudo cp /home/jeffrey/spotify-auth.js /var/www/hitster-trainer/ 2>/dev/null || echo 'spotify-auth.js not found'
-sudo cp /home/jeffrey/hitster-songs.js /var/www/hitster-trainer/ 2>/dev/null || echo 'hitster-songs.js not found'
-sudo cp /home/jeffrey/style.css /var/www/hitster-trainer/ 2>/dev/null || echo 'style.css not found'
+# Create the server commands - properly escaped for PowerShell
+$serverScript = @'
+#!/bin/bash
+echo "📁 Moving files to web directory..."
+sudo cp /home/jeffrey/index.html /var/www/hitster-trainer/ 2>/dev/null && echo "  ✓ index.html" || echo "  ✗ index.html not found"
+sudo cp /home/jeffrey/callback.html /var/www/hitster-trainer/ 2>/dev/null && echo "  ✓ callback.html" || echo "  ✗ callback.html not found"
+sudo cp /home/jeffrey/app.js /var/www/hitster-trainer/ 2>/dev/null && echo "  ✓ app.js" || echo "  ✗ app.js not found"
+sudo cp /home/jeffrey/quiz.js /var/www/hitster-trainer/ 2>/dev/null && echo "  ✓ quiz.js" || echo "  ✗ quiz.js not found"
+sudo cp /home/jeffrey/spotify-auth.js /var/www/hitster-trainer/ 2>/dev/null && echo "  ✓ spotify-auth.js" || echo "  ✗ spotify-auth.js not found"
+sudo cp /home/jeffrey/hitster-songs.js /var/www/hitster-trainer/ 2>/dev/null && echo "  ✓ hitster-songs.js" || echo "  ✗ hitster-songs.js not found"
+sudo cp /home/jeffrey/style.css /var/www/hitster-trainer/ 2>/dev/null && echo "  ✓ style.css" || echo "  ✗ style.css not found"
 
-echo ''
-echo '🔐 Fixing permissions...'
+echo ""
+echo "🔐 Fixing permissions..."
 sudo chown -R www-data:www-data /var/www/hitster-trainer/
 sudo chmod -R 755 /var/www/hitster-trainer/
 sudo find /var/www/hitster-trainer/ -type f -exec chmod 644 {} \;
+echo "  ✓ Permissions fixed"
 
-echo ''
-echo '🔄 Reloading Nginx...'
+echo ""
+echo "🔄 Reloading Nginx..."
 sudo systemctl reload nginx
+echo "  ✓ Nginx reloaded"
 
-echo ''
-echo '✅ Server update complete!'
-echo ''
-echo '📊 File listing:'
+echo ""
+echo "✅ Server update complete!"
+echo ""
+echo "📊 File listing:"
 ls -lh /var/www/hitster-trainer/ | grep -E '\.(html|js|css)$'
-"@
+'@
 
-# Execute commands on server
-Write-Host "  Executing commands on server..." -ForegroundColor Yellow
-ssh "${ServerUser}@${ServerIP}" $serverCommands
+# Save script temporarily and execute on server
+$tempScriptPath = "/tmp/hitster-update-$(Get-Random).sh"
+Write-Host "  Creating temporary update script on server..." -ForegroundColor Yellow
 
-if ($LASTEXITCODE -ne 0) {
+try {
+    # Upload the script
+    $serverScript | ssh "${ServerUser}@${ServerIP}" "cat > $tempScriptPath && chmod +x $tempScriptPath"
+    
+    # Execute the script
+    ssh "${ServerUser}@${ServerIP}" "bash $tempScriptPath && rm $tempScriptPath"
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "❌ Server setup failed!" -ForegroundColor Red
+        exit 1
+    }
+}
+catch {
     Write-Host ""
-    Write-Host "❌ Server setup failed!" -ForegroundColor Red
+    Write-Host "❌ Error executing commands on server: $_" -ForegroundColor Red
     exit 1
 }
 
@@ -130,7 +151,7 @@ $gitConfirmation = Read-Host "Do you want to commit and push changes to Git? (y/
 
 if ($gitConfirmation -eq 'y') {
     Write-Host "  Adding files to git..." -NoNewline
-    git add Project/*.html Project/*.js Project/*.css
+    git add Project\*.html Project\*.js Project\*.css
     Write-Host " ✓" -ForegroundColor Green
     
     Write-Host "  Committing changes..." -NoNewline
