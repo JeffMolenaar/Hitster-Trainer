@@ -3,8 +3,8 @@ class SpotifyAuth {
     constructor() {
         // You need to register your app at https://developer.spotify.com/dashboard
         // and replace this with your actual client ID
-        this.clientId = 'your_spotify_client_id_here'; // Replace with actual Client ID
-        this.redirectUri = window.location.origin + '/callback.html';
+        this.clientId = '8f31b962554b4366b0a594175be737c6'; // Replace with actual Client ID
+        this.redirectUri = 'https://your-domain.com/callback.html'; // Replace with your actual domain after deployment
         this.scopes = [
             'streaming',
             'user-read-email',
@@ -12,11 +12,11 @@ class SpotifyAuth {
             'user-read-playback-state',
             'user-modify-playback-state'
         ].join(' ');
-        
+
         this.accessToken = null;
         this.player = null;
         this.deviceId = null;
-        
+
         // Check for token in URL hash (after redirect)
         this.checkForToken();
     }
@@ -25,7 +25,7 @@ class SpotifyAuth {
     checkForToken() {
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
-        
+
         if (params.has('access_token')) {
             this.accessToken = params.get('access_token');
             // Clean up URL
@@ -50,7 +50,7 @@ class SpotifyAuth {
         authUrl.searchParams.append('response_type', 'token');
         authUrl.searchParams.append('redirect_uri', this.redirectUri);
         authUrl.searchParams.append('scope', this.scopes);
-        
+
         window.location.href = authUrl.toString();
     }
 

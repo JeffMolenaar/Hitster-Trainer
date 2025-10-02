@@ -13,8 +13,43 @@ Deze applicatie helpt je oefenen voor het bordspel Hitster. Je krijgt random vra
 - 📊 **Score bijhouden** tijdens de quiz
 - 🎨 **Responsive design** voor mobiel en desktop
 - 🔐 **Veilige Spotify authenticatie**
+- 🚀 **Easy deployment** met automatisch deployment script
 
-## Setup Instructies
+## Projectstructuur
+
+```
+Hitster-Trainer/
+├── Project/              # Alle applicatie bestanden
+│   ├── deploy.sh        # Automatisch deployment script voor Ubuntu
+│   ├── DEPLOYMENT.md    # Gedetailleerde deployment instructies
+│   ├── index.html       # Hoofdpagina
+│   ├── callback.html    # Spotify OAuth callback
+│   ├── demo.html        # Demo pagina
+│   ├── app.js          # Hoofdapplicatie logica
+│   ├── quiz.js         # Quiz logica
+│   ├── spotify-auth.js # Spotify authenticatie
+│   ├── hitster-songs.js # Songs database
+│   └── style.css       # Styling
+└── README.md           # Dit bestand
+```
+
+## Deployment naar Ubuntu Server
+
+Voor productie deployment naar een Ubuntu server met Nginx en reverse proxy:
+
+1. Zie `Project/DEPLOYMENT.md` voor complete instructies
+2. Run `deploy.sh` op je Ubuntu server
+3. Configureer je reverse proxy voor HTTPS
+4. Update `spotify-auth.js` met je production domain
+
+Quick start:
+```bash
+cd Project/
+chmod +x deploy.sh
+sudo ./deploy.sh
+```
+
+## Lokale Development
 
 ### 1. Spotify App Registreren
 
@@ -24,30 +59,19 @@ Deze applicatie helpt je oefenen voor het bordspel Hitster. Je krijgt random vra
 4. Vul de app details in:
    - **App name**: Hitster Trainer (of eigen keuze)
    - **App description**: Training app voor Hitster bordspel
-   - **Website**: Je website URL (of gebruik http://localhost:3000)
-   - **Redirect URIs**: Voeg toe: `http://localhost:3000/callback.html` (en je productie URL als je die hebt)
+   - **Redirect URIs**: Voeg toe: `https://your-domain.com/callback.html`
 5. Accepteer de Spotify Developer Terms of Service
 6. Klik "Save"
 
 ### 2. Client ID Configureren
 
 1. Kopieer de **Client ID** van je Spotify app
-2. Open `spotify-auth.js` in een teksteditor
-3. Vervang `'your_spotify_client_id_here'` met je echte Client ID:
+2. Open `Project/spotify-auth.js` in een teksteditor
+3. Vervang de Client ID en redirect URI:
    ```javascript
-   this.clientId = 'jouw_client_id_hier'; // Vervang met je Client ID
+   this.clientId = 'jouw_client_id_hier';
+   this.redirectUri = 'https://your-domain.com/callback.html';
    ```
-
-### 3. Applicatie Draaien
-
-#### Optie A: Met een lokale webserver (aanbevolen)
-
-```bash
-# Met Python (als je Python hebt geïnstalleerd)
-python -m http.server 3000
-
-# Of met Node.js (als je Node.js hebt geïnstalleerd)
-npx serve -p 3000
 
 # Of met PHP (als je PHP hebt geïnstalleerd)
 php -S localhost:3000
