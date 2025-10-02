@@ -65,31 +65,46 @@
     </div>
 
     <script>
-        // Handle Spotify OAuth callback
+        // Handle Spotify OAuth callback (supports both PKCE and legacy flows)
         function handleCallback() {
+            const statusElement = document.getElementById('status');
+            
+            // Check for authorization code (PKCE flow) in query string
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            
+            if (code) {
+                // PKCE flow - redirect to index to handle token exchange
+                statusElement.innerHTML = '<div class="success">🔐 Authenticatie code ontvangen! Tokens worden opgehaald...</div>';
+                
+                // Redirect to main app with the code in the URL
+                // The main app (spotify-auth.js) will handle the token exchange
+                setTimeout(() => {
+                    window.location.href = '/?' + window.location.search.substring(1);
+                }, 1000);
+                return;
+            }
+            
+            // Check for access token in hash (legacy Implicit Grant flow)
             const hash = window.location.hash.substring(1);
             const params = new URLSearchParams(hash);
             
-            const statusElement = document.getElementById('status');
-            
             if (params.has('access_token')) {
-                // Success - store the token and redirect back to main app
+                // Legacy flow - store the token and redirect
                 const token = params.get('access_token');
                 
                 statusElement.innerHTML = '<div class="success">✅ Succesvol ingelogd! Je wordt doorgestuurd...</div>';
                 
-                // Store token in localStorage (in real app, use secure storage)
                 localStorage.setItem('spotify_access_token', token);
                 
-                // Redirect back to main app after a short delay
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 2000);
                 
-            } else if (params.has('error')) {
-                // Error occurred
-                const error = params.get('error');
-                const errorDescription = params.get('error_description') || error;
+            } else if (params.has('error') || urlParams.has('error')) {
+                // Error occurred (check both hash and query)
+                const error = params.get('error') || urlParams.get('error');
+                const errorDescription = params.get('error_description') || urlParams.get('error_description') || error;
                 
                 statusElement.innerHTML = `
                     <div class="error">
