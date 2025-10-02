@@ -73,9 +73,17 @@ Dit project is geconfigureerd als een VS Code project met handige extensies en i
 ### VS Code Openen
 
 ```bash
-# Open het project in VS Code
+# Optie 1: Open het workspace bestand (Aanbevolen)
+code Hitster-Trainer.code-workspace
+
+# Optie 2: Open de huidige folder
 code .
 ```
+
+**Voordelen van het workspace bestand:**
+- Alle settings, extensions en tasks zijn automatisch geladen
+- Consistent ontwikkelomgeving voor alle teamleden
+- Eenvoudig te delen en versiebeheer
 
 ### Aanbevolen Extensies
 

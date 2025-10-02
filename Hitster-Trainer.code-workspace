@@ -1,0 +1,171 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "Hitster-Trainer"
+    }
+  ],
+  "settings": {
+    "files.encoding": "utf8",
+    "files.eol": "\n",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": true,
+    "[javascript]": {
+      "editor.defaultFormatter": "vscode.typescript-language-features",
+      "editor.tabSize": 4
+    },
+    "[html]": {
+      "editor.defaultFormatter": "vscode.html-language-features",
+      "editor.tabSize": 4
+    },
+    "[css]": {
+      "editor.defaultFormatter": "vscode.css-language-features",
+      "editor.tabSize": 4
+    },
+    "[json]": {
+      "editor.defaultFormatter": "vscode.json-language-features",
+      "editor.tabSize": 2
+    },
+    "[markdown]": {
+      "editor.defaultFormatter": "vscode.markdown-language-features",
+      "editor.tabSize": 2
+    },
+    "files.associations": {
+      "*.js": "javascript",
+      "*.html": "html",
+      "*.css": "css"
+    },
+    "liveServer.settings.port": 3000,
+    "liveServer.settings.root": "/",
+    "liveServer.settings.CustomBrowser": "chrome",
+    "html.format.indentInnerHtml": true,
+    "html.format.wrapLineLength": 120,
+    "javascript.suggest.autoImports": true,
+    "javascript.updateImportsOnFileMove.enabled": "always"
+  },
+  "extensions": {
+    "recommendations": [
+      "ritwickdey.liveserver",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "formulahendry.auto-rename-tag",
+      "ecmel.vscode-html-css",
+      "christian-kohler.path-intellisense",
+      "shd101wyy.markdown-preview-enhanced",
+      "yzhang.markdown-all-in-one"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "chrome",
+        "request": "launch",
+        "name": "Launch Chrome with Live Server",
+        "url": "http://localhost:3000",
+        "webRoot": "${workspaceFolder}",
+        "sourceMaps": true,
+        "preLaunchTask": "Start Live Server (if not running)"
+      },
+      {
+        "type": "chrome",
+        "request": "attach",
+        "name": "Attach to Chrome",
+        "port": 9222,
+        "webRoot": "${workspaceFolder}"
+      },
+      {
+        "type": "chrome",
+        "request": "launch",
+        "name": "Open Demo Page",
+        "url": "http://localhost:3000/demo.html",
+        "webRoot": "${workspaceFolder}"
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Start Live Server (if not running)",
+        "type": "shell",
+        "command": "echo",
+        "args": [
+          "Start Live Server extension manually or use 'Start Local Server' task"
+        ],
+        "presentation": {
+          "reveal": "silent"
+        }
+      },
+      {
+        "label": "Start Local Server (Python)",
+        "type": "shell",
+        "command": "python",
+        "args": [
+          "-m",
+          "http.server",
+          "3000"
+        ],
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        },
+        "runOptions": {
+          "instanceLimit": 1
+        }
+      },
+      {
+        "label": "Start Local Server (Node.js)",
+        "type": "shell",
+        "command": "npx",
+        "args": [
+          "serve",
+          "-p",
+          "3000"
+        ],
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        },
+        "runOptions": {
+          "instanceLimit": 1
+        }
+      },
+      {
+        "label": "Start Local Server (PHP)",
+        "type": "shell",
+        "command": "php",
+        "args": [
+          "-S",
+          "localhost:3000"
+        ],
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        },
+        "runOptions": {
+          "instanceLimit": 1
+        }
+      },
+      {
+        "label": "Open in Browser",
+        "type": "shell",
+        "command": "echo",
+        "args": [
+          "Open http://localhost:3000 in your browser"
+        ],
+        "presentation": {
+          "reveal": "always"
+        }
+      }
+    ]
+  }
+}
