@@ -4,7 +4,14 @@ class SpotifyAuth {
         // You need to register your app at https://developer.spotify.com/dashboard
         // and replace this with your actual client ID
         this.clientId = '8f31b962554b4366b0a594175be737c6'; // Replace with actual Client ID
-        this.redirectUri = 'https://your-domain.com/callback.html'; // Replace with your actual domain after deployment
+        
+        // Use window.location.origin to automatically get the correct URL
+        // This prevents redirect URI mismatch errors
+        this.redirectUri = window.location.origin + '/callback.html';
+        
+        // Debug: Log the redirect URI being used
+        console.log('🔍 Spotify Redirect URI:', this.redirectUri);
+        
         this.scopes = [
             'streaming',
             'user-read-email',
