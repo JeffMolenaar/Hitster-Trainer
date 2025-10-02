@@ -1,16 +1,47 @@
 # Nginx Reverse Proxy Setup Instructies
 
-## Installatie op je Reverse Proxy Server
+## Quick Start Guide
 
-### Stap 1: Configuratie bestand plaatsen
+Er zijn **twee configuratie bestanden**:
 
-Kopieer `nginx-reverse-proxy.conf` naar je reverse proxy server:
+1. **`nginx-reverse-proxy-http-only.conf`** - Start hiermee! (voor Certbot SSL certificaten)
+2. **`nginx-reverse-proxy.conf`** - Volledig HTTPS setup (optioneel, na Certbot)
+
+### Snelle Setup (Aanbevolen):
+
+```bash
+# 1. Upload HTTP-only config
+scp nginx-reverse-proxy-http-only.conf user@reverse-proxy:/tmp/
+
+# 2. Installeer
+sudo cp /tmp/nginx-reverse-proxy-http-only.conf /etc/nginx/sites-available/hitster-trainer
+sudo nano /etc/nginx/sites-available/hitster-trainer  # Vervang your-domain.com
+
+# 3. Activeer
+sudo ln -s /etc/nginx/sites-available/hitster-trainer /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+
+# 4. Verkrijg SSL certificaat
+sudo apt-get install certbot python3-certbot-nginx
+sudo certbot --nginx -d jouw-domein.nl -d www.jouw-domein.nl
+
+# Done! Certbot heeft automatisch HTTPS geconfigureerd 🎉
+```
+
+---
+
+## Gedetailleerde Installatie
+
+### Stap 1: Configuratie bestanden uploaden
+
+Upload beide configuratie bestanden naar je reverse proxy server:
 
 ```bash
 # Upload naar server
+scp nginx-reverse-proxy-http-only.conf user@reverse-proxy-ip:/tmp/
 scp nginx-reverse-proxy.conf user@reverse-proxy-ip:/tmp/
 
-# Of als je al op de server bent, maak het bestand aan:
+# Of als je al op de server bent, kopieer de inhoud handmatig:
 sudo nano /etc/nginx/sites-available/hitster-trainer
 ```
 
@@ -41,9 +72,18 @@ sudo nano /etc/nginx/sites-available/hitster-trainer
 - SSL protocols en ciphers zijn al modern en veilig ingesteld
 - Security headers zijn al toegevoegd
 
-### Stap 3: Site activeren
+### Stap 3: Start met HTTP-only configuratie (voor Certbot)
+
+**BELANGRIJK**: Gebruik eerst de HTTP-only configuratie zodat Certbot kan werken!
 
 ```bash
+# Kopieer de HTTP-only configuratie
+sudo cp /tmp/nginx-reverse-proxy-http-only.conf /etc/nginx/sites-available/hitster-trainer
+
+# OF pas de server_name aan in het bestand
+sudo nano /etc/nginx/sites-available/hitster-trainer
+# Vervang: your-domain.com met jouw-domein.nl
+
 # Maak symbolic link naar sites-enabled
 sudo ln -s /etc/nginx/sites-available/hitster-trainer /etc/nginx/sites-enabled/
 
@@ -57,17 +97,17 @@ sudo systemctl reload nginx
 ### Stap 4: Firewall instellen
 
 ```bash
-# Sta HTTPS verkeer toe
-sudo ufw allow 443/tcp
+# Sta HTTP en HTTPS verkeer toe
 sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 
 # Reload firewall
 sudo ufw reload
 ```
 
-### Stap 5: SSL Certificaat verkrijgen (als je die nog niet hebt)
+### Stap 5: SSL Certificaat verkrijgen met Let's Encrypt
 
-#### Optie A: Let's Encrypt (Gratis, Aanbevolen)
+#### Optie A: Let's Encrypt met Certbot (Gratis, Aanbevolen)
 
 ```bash
 # Installeer Certbot
@@ -75,9 +115,41 @@ sudo apt-get update
 sudo apt-get install certbot python3-certbot-nginx
 
 # Verkrijg automatisch een SSL certificaat
+# Certbot zal de HTTP-only configuratie automatisch updaten met HTTPS
 sudo certbot --nginx -d jouw-domein.nl -d www.jouw-domein.nl
 
-# Certbot zal automatisch je Nginx configuratie updaten
+# Volg de prompts:
+# - Email adres invoeren
+# - Akkoord gaan met Terms of Service
+# - Kies optie 2: Redirect HTTP naar HTTPS (aanbevolen)
+
+# Certbot heeft nu automatisch:
+# - SSL certificaten geïnstalleerd
+# - Nginx configuratie aangepast met HTTPS
+# - HTTP naar HTTPS redirect toegevoegd
+```
+
+### Stap 6 (Optioneel): Overschakelen naar aangepaste HTTPS configuratie
+
+Als je meer controle wilt over de configuratie (security headers, caching, etc.):
+
+```bash
+# Backup de Certbot configuratie
+sudo cp /etc/nginx/sites-available/hitster-trainer /etc/nginx/sites-available/hitster-trainer.certbot-backup
+
+# Kopieer de volledige HTTPS configuratie
+sudo cp /tmp/nginx-reverse-proxy.conf /etc/nginx/sites-available/hitster-trainer
+
+# Pas aan: vervang your-domain.com met jouw domein
+sudo nano /etc/nginx/sites-available/hitster-trainer
+
+# Pas SSL certificaat paden aan (Certbot gebruikt meestal):
+# ssl_certificate /etc/letsencrypt/live/jouw-domein.nl/fullchain.pem;
+# ssl_certificate_key /etc/letsencrypt/live/jouw-domein.nl/privkey.pem;
+
+# Test en herlaad
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
 #### Optie B: Eigen certificaat
