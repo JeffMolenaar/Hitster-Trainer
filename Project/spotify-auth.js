@@ -48,80 +48,14 @@ class SpotifyAuth {
             .replace(/\//g, '_');
     }
 
-    // Check if there's an authorization code or access token (after redirect)
+    // Check if there's a stored access token (after redirect from callback)
     async checkForToken() {
-        // Check for authorization code (PKCE flow)
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        
-        if (code) {
-            console.log('🔐 Authorization code received, exchanging for token...');
-            const codeVerifier = localStorage.getItem('code_verifier');
-            
-            if (codeVerifier) {
-                await this.exchangeCodeForToken(code, codeVerifier);
-                // Clean up URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                localStorage.removeItem('code_verifier');
-                return;
-            }
-        }
-        
-        // Check for access token in hash (legacy support)
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-
-        if (params.has('access_token')) {
-            this.accessToken = params.get('access_token');
-            window.location.hash = '';
-            localStorage.setItem('spotify_access_token', this.accessToken);
+        // Check if we have a stored token
+        const storedToken = localStorage.getItem('spotify_access_token');
+        if (storedToken) {
+            this.accessToken = storedToken;
+            console.log('✅ Found stored access token');
             this.initializePlayer();
-        } else {
-            // Check if we have a stored token
-            const storedToken = localStorage.getItem('spotify_access_token');
-            if (storedToken) {
-                this.accessToken = storedToken;
-                this.initializePlayer();
-            }
-        }
-    }
-
-    // Exchange authorization code for access token
-    async exchangeCodeForToken(code, codeVerifier) {
-        const params = new URLSearchParams({
-            client_id: this.clientId,
-            grant_type: 'authorization_code',
-            code: code,
-            redirect_uri: this.redirectUri,
-            code_verifier: codeVerifier
-        });
-
-        try {
-            const response = await fetch('https://accounts.spotify.com/api/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: params
-            });
-
-            if (!response.ok) {
-                throw new Error('Token exchange failed');
-            }
-
-            const data = await response.json();
-            this.accessToken = data.access_token;
-            localStorage.setItem('spotify_access_token', this.accessToken);
-            
-            // Store refresh token if provided
-            if (data.refresh_token) {
-                localStorage.setItem('spotify_refresh_token', data.refresh_token);
-            }
-            
-            console.log('✅ Successfully authenticated with Spotify');
-            this.initializePlayer();
-        } catch (error) {
-            console.error('❌ Error exchanging code for token:', error);
         }
     }
 
@@ -133,7 +67,7 @@ class SpotifyAuth {
         const codeVerifier = this.generateRandomString(64);
         const codeChallenge = await this.generateCodeChallenge(codeVerifier);
         
-        // Store code verifier for later
+        // Store code verifier for later (callback.html will use this)
         localStorage.setItem('code_verifier', codeVerifier);
         
         const authUrl = new URL('https://accounts.spotify.com/authorize');
