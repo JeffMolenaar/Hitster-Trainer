@@ -35,8 +35,15 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .hidden {
@@ -57,6 +64,10 @@ body {
     margin: 5px;
     min-width: 120px;
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    position: relative;
+    z-index: 5;
 }
 
 .btn:hover {
@@ -100,11 +111,15 @@ header {
     margin-bottom: 30px;
     flex-wrap: wrap;
     gap: 15px;
+    position: relative;
+    z-index: 10;
 }
 
 header h1 {
     color: #1db954;
     font-size: 2rem;
+    flex: 1;
+    min-width: 150px;
 }
 
 #user-info {
@@ -198,6 +213,8 @@ header h1 {
 /* Question Container */
 #question-container {
     margin-bottom: 30px;
+    position: relative;
+    z-index: 1;
 }
 
 #audio-player {
@@ -211,6 +228,13 @@ header h1 {
     font-size: 18px;
     padding: 15px 40px;
     min-width: 200px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+#question {
+    position: relative;
+    z-index: 1;
 }
 
 #question h2 {
@@ -273,14 +297,31 @@ header h1 {
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
 }
 
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-10px); }
-    75% { transform: translateX(10px); }
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-10px);
+    }
+
+    75% {
+        transform: translateX(10px);
+    }
 }
 
 /* Result Section */
@@ -293,8 +334,15 @@ header h1 {
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 #result-section h2 {
@@ -396,8 +444,13 @@ header h1 {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Responsive design */
@@ -438,10 +491,17 @@ header h1 {
         flex-direction: column;
         text-align: center;
         gap: 10px;
+        align-items: stretch;
     }
 
     header h1 {
         font-size: 1.5rem;
+        margin-bottom: 8px;
+    }
+    
+    header button {
+        width: 100%;
+        margin: 0;
     }
 
     .mode-cards {
@@ -494,8 +554,28 @@ header h1 {
         min-width: unset;
     }
 
+    #question-container {
+        margin-bottom: 20px;
+    }
+
+    #audio-player {
+        padding: 18px;
+        margin-bottom: 25px;
+    }
+
+    #question {
+        margin-top: 15px;
+        padding: 0 5px;
+    }
+
     #question h2 {
         font-size: 1.3rem;
+        margin-bottom: 20px;
+    }
+
+    #question-text {
+        line-height: 1.4;
+        word-wrap: break-word;
     }
 
     #auth-section h1 {
@@ -579,7 +659,39 @@ header h1 {
         font-size: 0.75rem;
     }
 
+    #question-container {
+        margin-bottom: 15px;
+    }
+
+    #audio-player {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    #question {
+        margin-top: 12px;
+        padding: 0 5px;
+    }
+
     #question h2 {
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+        line-height: 1.5;
+        word-wrap: break-word;
+    }
+
+    #question-text {
+        padding: 0 5px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        font-size: 1rem;
+        min-height: 48px; /* Touch-friendly minimum size */
+    }
+
+    #play-btn {
+        min-height: 50px;
         font-size: 1.1rem;
     }
 
@@ -642,6 +754,11 @@ header h1 {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
