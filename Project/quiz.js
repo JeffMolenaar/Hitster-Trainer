@@ -428,20 +428,72 @@ class HitsterQuiz {
 
         // Extra check for Spotify ID
         if (!this.currentSong.spotifyId || this.currentSong.spotifyId.trim() === "") {
-            console.error('Cannot play: song has no Spotify ID');
+            console.error('❌ Cannot play: song has no Spotify ID');
             alert('❌ Dit nummer heeft geen Spotify ID en kan niet afgespeeld worden.');
             return;
         }
 
         try {
-            const success = await window.spotifyAuth.playTrack(this.currentSong.spotifyId);
-            if (success) {
-                this.isPlaying = true;
-                this.updatePlayButton();
+            const playResult = await window.spotifyAuth.playTrack(this.currentSong.spotifyId);
+            
+            if (!playResult.success) {
+                // Playback failed - log and skip
+                console.error(`🚫 [QUIZ] Failed to play "${this.currentSong.title}" by ${this.currentSong.artist}`);
+                console.error(`   Reason: ${playResult.reason}`);
+                
+                // Skip this song and try next
+                await this.skipToNextSong(`Playback failed: ${playResult.reason}`);
+                return;
             }
+
+            // Playback started - now verify it's actually playing the correct track
+            const verification = await window.spotifyAuth.verifyPlayback(
+                this.currentSong.spotifyId,
+                `${this.currentSong.title} - ${this.currentSong.artist}`
+            );
+
+            if (!verification.success) {
+                // Verification failed - skip this song
+                console.error(`🚫 [QUIZ] Verification failed for "${this.currentSong.title}" by ${this.currentSong.artist}`);
+                console.error(`   Reason: ${verification.reason} - ${verification.message}`);
+                
+                await this.skipToNextSong(`Verification failed: ${verification.reason}`);
+                return;
+            }
+
+            // Success! Song is playing correctly
+            this.isPlaying = true;
+            this.updatePlayButton();
+            
         } catch (error) {
-            console.error('Failed to play song:', error);
+            console.error('💥 [QUIZ] Exception while playing song:', error);
+            await this.skipToNextSong('Exception occurred');
         }
+    }
+
+    // Skip to next song when current one fails
+    async skipToNextSong(reason) {
+        console.warn(`⏭️ [QUIZ] Skipping "${this.currentSong.title}" - Reason: ${reason}`);
+        
+        // Pause any playback
+        if (this.isPlaying) {
+            await window.spotifyAuth.pausePlayback();
+            this.isPlaying = false;
+        }
+
+        // Move to next song
+        this.currentSongIndex++;
+        
+        // Check if we have more songs
+        if (this.currentSongIndex >= this.songsInQuiz.length) {
+            console.log('📊 [QUIZ] No more songs, showing final score');
+            this.showFinalScore();
+            return;
+        }
+
+        // Load next song
+        console.log(`🔄 [QUIZ] Loading next song...`);
+        this.loadSong();
     }
 
     // Toggle playback

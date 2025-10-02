@@ -4,14 +4,14 @@ class SpotifyAuth {
         // You need to register your app at https://developer.spotify.com/dashboard
         // and replace this with your actual client ID
         this.clientId = '8f31b962554b4366b0a594175be737c6'; // Replace with actual Client ID
-        
+
         // Use window.location.origin to automatically get the correct URL
         // This prevents redirect URI mismatch errors
         this.redirectUri = window.location.origin + '/callback.html';
-        
+
         // Debug: Log the redirect URI being used
         console.log('🔍 Spotify Redirect URI:', this.redirectUri);
-        
+
         this.scopes = [
             'streaming',
             'user-read-email',
@@ -41,7 +41,7 @@ class SpotifyAuth {
             'SHA-256',
             new TextEncoder().encode(codeVerifier)
         );
-        
+
         return btoa(String.fromCharCode(...new Uint8Array(digest)))
             .replace(/=/g, '')
             .replace(/\+/g, '-')
@@ -62,14 +62,14 @@ class SpotifyAuth {
     // Start the Spotify OAuth flow with PKCE
     async login() {
         console.log('🔐 Using PKCE authorization flow');
-        
+
         // Generate code verifier and challenge
         const codeVerifier = this.generateRandomString(64);
         const codeChallenge = await this.generateCodeChallenge(codeVerifier);
-        
+
         // Store code verifier for later (callback.html will use this)
         localStorage.setItem('code_verifier', codeVerifier);
-        
+
         const authUrl = new URL('https://accounts.spotify.com/authorize');
         authUrl.searchParams.append('client_id', this.clientId);
         authUrl.searchParams.append('response_type', 'code');
@@ -189,8 +189,8 @@ class SpotifyAuth {
     // Play a track by Spotify ID
     async playTrack(trackId) {
         if (!this.accessToken || !this.deviceId) {
-            console.error('Player not ready');
-            return false;
+            console.error('🚫 [PLAY TRACK] Player not ready');
+            return { success: false, reason: 'PLAYER_NOT_READY' };
         }
 
         try {
@@ -206,14 +206,25 @@ class SpotifyAuth {
             });
 
             if (!response.ok) {
-                console.error('Failed to play track:', response.status);
-                return false;
+                const errorBody = await response.text();
+                console.error(`🚫 [PLAY TRACK] Failed (${response.status}):`, errorBody);
+                
+                // Parse specific errors
+                if (response.status === 404) {
+                    return { success: false, reason: 'TRACK_NOT_FOUND' };
+                } else if (response.status === 403) {
+                    return { success: false, reason: 'PREMIUM_REQUIRED' };
+                } else if (response.status === 502 || response.status === 503) {
+                    return { success: false, reason: 'SPOTIFY_UNAVAILABLE' };
+                }
+                
+                return { success: false, reason: 'PLAYBACK_FAILED', status: response.status };
             }
 
-            return true;
+            return { success: true };
         } catch (error) {
-            console.error('Error playing track:', error);
-            return false;
+            console.error('💥 [PLAY TRACK] Exception:', error);
+            return { success: false, reason: 'NETWORK_ERROR', error: error.message };
         }
     }
 
@@ -274,6 +285,116 @@ class SpotifyAuth {
         } catch (error) {
             console.error('Error fetching track info:', error);
             return null;
+        }
+    }
+
+    // Verify that the correct track is playing
+    async verifyPlayback(expectedTrackId, songTitle) {
+        if (!this.accessToken) {
+            return {
+                success: false,
+                reason: 'NOT_AUTHENTICATED',
+                message: 'Niet geauthenticeerd bij Spotify'
+            };
+        }
+
+        try {
+            // Wait a bit for playback to start
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const response = await fetch('https://api.spotify.com/v1/me/player', {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`
+                }
+            });
+
+            if (response.status === 204) {
+                // No active playback
+                console.warn(`🚫 [PLAYBACK VERIFY] No active playback for "${songTitle}" (ID: ${expectedTrackId})`);
+                return {
+                    success: false,
+                    reason: 'NO_ACTIVE_DEVICE',
+                    message: 'Geen actief Spotify apparaat gevonden'
+                };
+            }
+
+            if (!response.ok) {
+                if (response.status === 403) {
+                    console.error(`🚫 [PLAYBACK VERIFY] Premium required for "${songTitle}" (ID: ${expectedTrackId})`);
+                    return {
+                        success: false,
+                        reason: 'PREMIUM_REQUIRED',
+                        message: 'Spotify Premium vereist'
+                    };
+                }
+                console.error(`🚫 [PLAYBACK VERIFY] API error ${response.status} for "${songTitle}"`);
+                return {
+                    success: false,
+                    reason: 'API_ERROR',
+                    message: `Spotify API fout: ${response.status}`
+                };
+            }
+
+            const playbackState = await response.json();
+
+            // Check if playback is active
+            if (!playbackState.is_playing) {
+                console.warn(`⏸️ [PLAYBACK VERIFY] Playback not started for "${songTitle}" (ID: ${expectedTrackId})`);
+                return {
+                    success: false,
+                    reason: 'NOT_PLAYING',
+                    message: 'Playback niet gestart'
+                };
+            }
+
+            // Check if correct track is playing
+            const currentTrackId = playbackState.item?.id;
+            if (!currentTrackId) {
+                console.warn(`❓ [PLAYBACK VERIFY] No track info available for "${songTitle}"`);
+                return {
+                    success: false,
+                    reason: 'NO_TRACK_INFO',
+                    message: 'Geen track informatie beschikbaar'
+                };
+            }
+
+            if (currentTrackId !== expectedTrackId) {
+                console.error(`❌ [PLAYBACK VERIFY] Wrong track playing!`);
+                console.error(`   Expected: "${songTitle}" (${expectedTrackId})`);
+                console.error(`   Got: "${playbackState.item.name}" by ${playbackState.item.artists.map(a => a.name).join(', ')} (${currentTrackId})`);
+                return {
+                    success: false,
+                    reason: 'WRONG_TRACK',
+                    message: 'Verkeerd nummer wordt afgespeeld',
+                    actualTrack: playbackState.item.name
+                };
+            }
+
+            // Check if track is available
+            if (playbackState.item.is_local) {
+                console.warn(`📁 [PLAYBACK VERIFY] Track "${songTitle}" is a local file`);
+                return {
+                    success: false,
+                    reason: 'LOCAL_FILE',
+                    message: 'Lokaal bestand, niet beschikbaar'
+                };
+            }
+
+            // All checks passed!
+            console.log(`✅ [PLAYBACK VERIFY] Successfully playing "${songTitle}" (${expectedTrackId})`);
+            return {
+                success: true,
+                reason: 'SUCCESS',
+                message: 'Nummer speelt correct af'
+            };
+
+        } catch (error) {
+            console.error(`💥 [PLAYBACK VERIFY] Exception for "${songTitle}":`, error);
+            return {
+                success: false,
+                reason: 'NETWORK_ERROR',
+                message: `Netwerkfout: ${error.message}`
+            };
         }
     }
 }
