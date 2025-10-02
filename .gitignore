@@ -44,7 +44,6 @@ jspm_packages/
 .env.production.local
 
 # IDE files
-.vscode/
 .idea/
 *.swp
 *.swo

@@ -66,6 +66,52 @@ Je kunt ook `index.html` direct in je browser openen, maar sommige browsers blok
 5. Je wordt teruggeleid naar de app
 6. Begin met de quiz!
 
+## VS Code Setup (Aanbevolen)
+
+Dit project is geconfigureerd als een VS Code project met handige extensies en instellingen.
+
+### VS Code Openen
+
+```bash
+# Open het project in VS Code
+code .
+```
+
+### Aanbevolen Extensies
+
+Bij het openen van het project wordt je gevraagd om de aanbevolen extensies te installeren. De belangrijkste zijn:
+
+- **Live Server** - Voor het draaien van een lokale webserver met live reload
+- **ESLint** - JavaScript linting
+- **Prettier** - Code formatting
+- **Auto Rename Tag** - Automatisch HTML tags hernoemen
+- **HTML CSS Support** - Verbeterde HTML/CSS ondersteuning
+- **Path Intellisense** - Autocomplete voor bestandspaden
+- **Markdown Preview** - Preview voor Markdown bestanden
+
+### Server Starten in VS Code
+
+#### Optie 1: Live Server Extensie (Aanbevolen)
+1. Installeer de Live Server extensie
+2. Klik rechts onderin op "Go Live" 
+3. Of rechtermuisklik op `index.html` en selecteer "Open with Live Server"
+
+#### Optie 2: Via Tasks Menu
+1. Druk op `Ctrl+Shift+P` (of `Cmd+Shift+P` op Mac)
+2. Type "Tasks: Run Task"
+3. Kies een van de server opties:
+   - "Start Local Server (Python)"
+   - "Start Local Server (Node.js)"
+   - "Start Local Server (PHP)"
+
+### Debuggen in VS Code
+
+1. Zorg dat de server draait op http://localhost:3000
+2. Druk op `F5` of ga naar "Run and Debug" sidebar
+3. Selecteer "Launch Chrome with Live Server"
+4. Chrome wordt geopend met de debugger aangesloten
+5. Je kunt nu breakpoints zetten in je JavaScript bestanden
+
 ## Hoe te Spelen
 
 1. **Start de quiz** - Je krijgt 10 willekeurige vragen

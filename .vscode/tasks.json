@@ -1,0 +1,83 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Live Server (if not running)",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Start Live Server extension manually or use 'Start Local Server' task"
+            ],
+            "presentation": {
+                "reveal": "silent"
+            }
+        },
+        {
+            "label": "Start Local Server (Python)",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m",
+                "http.server",
+                "3000"
+            ],
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        },
+        {
+            "label": "Start Local Server (Node.js)",
+            "type": "shell",
+            "command": "npx",
+            "args": [
+                "serve",
+                "-p",
+                "3000"
+            ],
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        },
+        {
+            "label": "Start Local Server (PHP)",
+            "type": "shell",
+            "command": "php",
+            "args": [
+                "-S",
+                "localhost:3000"
+            ],
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        },
+        {
+            "label": "Open in Browser",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Open http://localhost:3000 in your browser"
+            ],
+            "presentation": {
+                "reveal": "always"
+            }
+        }
+    ]
+}
