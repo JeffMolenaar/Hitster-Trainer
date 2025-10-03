@@ -81,21 +81,21 @@ class SpotifyIDLookup {
     async searchDeezerPreview(artist, title, year) {
         try {
             const query = `${artist} ${title}`;
-            const encodedQuery = encodeURIComponent(query);
 
             await this.logDebug('DEEZER_SEARCH', `Searching Deezer: ${artist} - ${title}`, {
                 query: query
             });
 
+            // Use server-side proxy to avoid CORS issues
             const response = await fetch(
-                `https://api.deezer.com/search?q=${encodedQuery}`,
+                `deezer-proxy.php?q=${encodeURIComponent(query)}`,
                 {
                     method: 'GET'
                 }
             );
 
             if (!response.ok) {
-                await this.logDebug('DEEZER_ERROR', `Deezer API returned status ${response.status}`);
+                await this.logDebug('DEEZER_ERROR', `Deezer proxy returned status ${response.status}`);
                 return null;
             }
 
