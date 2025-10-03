@@ -32,11 +32,11 @@ switch ($choice) {
     "3" {
         $searchTerm = Read-Host "`nZoek naar (bijv. artist of title)"
         Write-Host "`n🔍 Zoekresultaten voor '$searchTerm':`n" -ForegroundColor Yellow
-        ssh -t "${user}@${server}" "grep -i '${searchTerm}' ${logFile} | tail -20"
+        ssh -t "${user}@${server}" "grep -i ${searchTerm} ${logFile} | tail -20"
     }
     "4" {
         Write-Host "`n📊 Preview URL statistieken:`n" -ForegroundColor Yellow
-        ssh -t "${user}@${server}" "grep 'MATCH_FOUND' ${logFile} | wc -l && grep 'hasPreview.*true' ${logFile} | wc -l && grep 'hasPreview.*false' ${logFile} | wc -l"
+        ssh -t "${user}@${server}" "grep MATCH_FOUND ${logFile} | wc -l && grep hasPreview.*true ${logFile} | wc -l && grep hasPreview.*false ${logFile} | wc -l"
     }
     "5" {
         $confirm = Read-Host "`n⚠️  Weet je zeker dat je de log wilt legen? (ja/nee)"
