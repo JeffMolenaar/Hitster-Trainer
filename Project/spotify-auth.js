@@ -251,35 +251,42 @@ class SpotifyAuth {
     }
 
     // Play a track by Spotify ID
-    async playTrack(trackId) {
+    async playTrack(trackId, previewUrl = null) {
         // MOBILE: Use preview URL with HTML5 audio
         if (this.isMobile) {
             console.log('📱 [MOBILE PLAYBACK] Using preview URL for track:', trackId);
             console.log('   Audio player ready:', !!this.audioPlayer);
-            console.log('   Access token:', this.accessToken ? 'Present' : 'Missing');
+            console.log('   Preview URL provided:', previewUrl ? 'Yes' : 'No, will fetch');
             
             try {
-                // Get track info to retrieve preview URL
-                console.log('🔍 [MOBILE PLAYBACK] Fetching track info...');
-                const trackInfo = await this.getTrackInfo(trackId);
-                
-                if (!trackInfo) {
-                    console.error('🚫 [MOBILE PLAYBACK] Failed to get track info');
-                    return { success: false, reason: 'TRACK_INFO_FAILED' };
+                // Use provided preview URL or fetch from API
+                if (previewUrl) {
+                    console.log('✅ [MOBILE PLAYBACK] Using provided preview URL from song data');
+                    this.currentPreviewUrl = previewUrl;
+                } else {
+                    // Fallback: Get track info to retrieve preview URL
+                    console.log('🔍 [MOBILE PLAYBACK] No preview URL provided, fetching track info...');
+                    const trackInfo = await this.getTrackInfo(trackId);
+                    
+                    if (!trackInfo) {
+                        console.error('🚫 [MOBILE PLAYBACK] Failed to get track info');
+                        return { success: false, reason: 'TRACK_INFO_FAILED' };
+                    }
+                    
+                    console.log(`✅ [MOBILE PLAYBACK] Got track: "${trackInfo.name}" by ${trackInfo.artists.map(a => a.name).join(', ')}`);
+                    console.log('   Preview URL:', trackInfo.preview_url ? 'Available' : 'NOT AVAILABLE');
+                    
+                    if (!trackInfo.preview_url) {
+                        console.warn('⚠️ [MOBILE PLAYBACK] No preview URL available for this track');
+                        console.warn(`   Track: "${trackInfo.name}" by ${trackInfo.artists.map(a => a.name).join(', ')}`);
+                        return { success: false, reason: 'NO_PREVIEW_URL' };
+                    }
+                    
+                    this.currentPreviewUrl = trackInfo.preview_url;
                 }
                 
-                console.log(`✅ [MOBILE PLAYBACK] Got track: "${trackInfo.name}" by ${trackInfo.artists.map(a => a.name).join(', ')}`);
-                console.log('   Preview URL:', trackInfo.preview_url ? 'Available' : 'NOT AVAILABLE');
-                
-                if (!trackInfo.preview_url) {
-                    console.warn('⚠️ [MOBILE PLAYBACK] No preview URL available for this track');
-                    console.warn(`   Track: "${trackInfo.name}" by ${trackInfo.artists.map(a => a.name).join(', ')}`);
-                    return { success: false, reason: 'NO_PREVIEW_URL' };
-                }
-                
-                // Store preview URL and play
-                this.currentPreviewUrl = trackInfo.preview_url;
-                console.log('🎵 [MOBILE PLAYBACK] Preview URL stored, preparing audio player...');
+                console.log('🎵 [MOBILE PLAYBACK] Preview URL ready, preparing audio player...');
+                console.log('   URL:', this.currentPreviewUrl);
                 
                 if (this.audioPlayer) {
                     this.audioPlayer.src = this.currentPreviewUrl;

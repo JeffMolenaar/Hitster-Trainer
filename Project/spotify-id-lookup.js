@@ -30,14 +30,14 @@ class SpotifyIDLookup {
             if (!Array.isArray(parsed)) {
                 throw new Error('Input moet een array zijn');
             }
-            
+
             // Validate each song object
             for (let song of parsed) {
                 if (!song.artist || !song.title || !song.year) {
                     throw new Error('Elk nummer moet artist, title en year bevatten');
                 }
             }
-            
+
             return parsed;
         } catch (error) {
             throw new Error(`JSON Parse Error: ${error.message}`);
@@ -50,7 +50,7 @@ class SpotifyIDLookup {
             // Build search query
             const query = `artist:${artist} track:${title}`;
             const encodedQuery = encodeURIComponent(query);
-            
+
             const response = await fetch(
                 `https://api.spotify.com/v1/search?q=${encodedQuery}&type=track&limit=10`,
                 {
@@ -65,7 +65,7 @@ class SpotifyIDLookup {
             }
 
             const data = await response.json();
-            
+
             if (!data.tracks || !data.tracks.items || data.tracks.items.length === 0) {
                 return null;
             }
@@ -165,7 +165,7 @@ class SpotifyIDLookup {
         const progressSection = document.getElementById('progress-section');
         const progressFill = document.getElementById('progress-fill');
         const progressInfo = document.getElementById('progress-info');
-        
+
         progressSection.classList.add('active');
 
         for (let i = 0; i < songs.length; i++) {
@@ -210,16 +210,16 @@ class SpotifyIDLookup {
     displayResults() {
         const resultsSection = document.getElementById('results-section');
         const resultsList = document.getElementById('results-list');
-        
+
         resultsSection.classList.add('active');
 
         // Update stats
         document.getElementById('stat-total').textContent = this.stats.total;
         document.getElementById('stat-found').textContent = this.stats.found;
         document.getElementById('stat-notfound').textContent = this.stats.notFound;
-        
-        const avgConfidence = this.stats.found > 0 
-            ? Math.round(this.stats.totalConfidence / this.stats.found) 
+
+        const avgConfidence = this.stats.found > 0
+            ? Math.round(this.stats.totalConfidence / this.stats.found)
             : 0;
         document.getElementById('stat-confidence').textContent = avgConfidence + '%';
 
@@ -237,7 +237,7 @@ class SpotifyIDLookup {
     createResultItem(result, index) {
         const div = document.createElement('div');
         div.className = 'result-item';
-        
+
         if (result.status === 'found') {
             const confidence = result.match.confidence;
             if (confidence >= 80) {
@@ -274,10 +274,9 @@ class SpotifyIDLookup {
                     ` : ''}
                 </div>
                 <div class="result-actions">
-                    <span class="confidence-badge ${
-                        result.match.confidence >= 80 ? 'confidence-high' :
-                        result.match.confidence >= 60 ? 'confidence-medium' : 'confidence-low'
-                    }">
+                    <span class="confidence-badge ${result.match.confidence >= 80 ? 'confidence-high' :
+                    result.match.confidence >= 60 ? 'confidence-medium' : 'confidence-low'
+                }">
                         ${result.match.confidence}% match
                     </span>
                     <button onclick="lookupTool.changeMatch(${index})" style="background: #ffa500; color: white;">
@@ -322,7 +321,7 @@ class SpotifyIDLookup {
                 ❌
             </button>
         `;
-        
+
         div.appendChild(manualDiv);
         return div;
     }
@@ -404,14 +403,15 @@ class SpotifyIDLookup {
             artist: result.original.artist,
             title: result.original.title,
             year: result.original.year,
-            spotifyId: result.match ? result.match.spotifyId : ''
+            spotifyId: result.match ? result.match.spotifyId : '',
+            previewUrl: result.match ? result.match.previewUrl : null
         }));
     }
 
     // Save results to hitster-songs.js format
     async saveResults() {
         const finalResults = this.getFinalResults();
-        
+
         // Ask for confirmation
         const confirmed = confirm(
             `🔄 Weet je het zeker?\n\n` +
@@ -421,7 +421,7 @@ class SpotifyIDLookup {
             `Niet gevonden: ${this.stats.notFound}\n\n` +
             `Er wordt automatisch een backup gemaakt.`
         );
-        
+
         if (!confirmed) {
             return;
         }
@@ -434,7 +434,7 @@ class SpotifyIDLookup {
         try {
             // Secret key for basic security (you should change this!)
             const SECRET_KEY = 'hitster-admin-2024';
-            
+
             const response = await fetch('update-songs.php', {
                 method: 'POST',
                 headers: {
@@ -489,7 +489,7 @@ class SpotifyIDLookup {
     downloadJS() {
         const finalResults = this.getFinalResults();
         const jsContent = `// Hitster Songs Database\n// Backup created: ${new Date().toISOString()}\nconst hitsterSongs = ${JSON.stringify(finalResults, null, 4)};\n`;
-        
+
         const blob = new Blob([jsContent], { type: 'application/javascript' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -503,7 +503,7 @@ class SpotifyIDLookup {
     copyToClipboard() {
         const finalResults = this.getFinalResults();
         const text = JSON.stringify(finalResults, null, 4);
-        
+
         navigator.clipboard.writeText(text).then(() => {
             alert('✅ Gekopieerd naar clipboard!');
         }).catch(err => {
@@ -524,7 +524,7 @@ window.addEventListener('load', async () => {
 // UI Functions
 async function startLookup() {
     const input = document.getElementById('json-input').value.trim();
-    
+
     if (!input) {
         alert('⚠️ Plak eerst je JSON lijst!');
         return;
@@ -532,7 +532,7 @@ async function startLookup() {
 
     try {
         const songs = lookupTool.parseInput(input);
-        
+
         if (!await lookupTool.initialize()) {
             alert('⚠️ Je moet eerst inloggen met Spotify!');
             return;
@@ -569,7 +569,7 @@ function loadExample() {
             "spotifyId": ""
         }
     ];
-    
+
     document.getElementById('json-input').value = JSON.stringify(example, null, 4);
 }
 

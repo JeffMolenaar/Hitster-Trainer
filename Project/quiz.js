@@ -434,7 +434,10 @@ class HitsterQuiz {
         }
 
         try {
-            const playResult = await window.spotifyAuth.playTrack(this.currentSong.spotifyId);
+            const playResult = await window.spotifyAuth.playTrack(
+                this.currentSong.spotifyId,
+                this.currentSong.previewUrl || null
+            );
 
             if (!playResult.success) {
                 // Playback failed - log and skip
