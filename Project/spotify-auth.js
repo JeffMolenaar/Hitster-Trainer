@@ -278,6 +278,37 @@ class SpotifyAuth {
                     this.audioPlayer.src = this.currentPreviewUrl;
                     this.audioPlayer.currentTime = 0;
                     
+                    // Wait for metadata to load
+                    await new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error('Timeout loading audio'));
+                        }, 5000);
+                        
+                        const onLoad = () => {
+                            clearTimeout(timeout);
+                            this.audioPlayer.removeEventListener('loadedmetadata', onLoad);
+                            this.audioPlayer.removeEventListener('error', onError);
+                            resolve();
+                        };
+                        
+                        const onError = (e) => {
+                            clearTimeout(timeout);
+                            this.audioPlayer.removeEventListener('loadedmetadata', onLoad);
+                            this.audioPlayer.removeEventListener('error', onError);
+                            reject(e);
+                        };
+                        
+                        this.audioPlayer.addEventListener('loadedmetadata', onLoad);
+                        this.audioPlayer.addEventListener('error', onError);
+                        
+                        // If already loaded, resolve immediately
+                        if (this.audioPlayer.readyState >= 1) {
+                            onLoad();
+                        }
+                    });
+                    
+                    console.log('📊 [MOBILE PLAYBACK] Audio metadata loaded, readyState:', this.audioPlayer.readyState);
+                    
                     try {
                         await this.audioPlayer.play();
                         console.log('✅ [MOBILE PLAYBACK] Playing preview:', trackInfo.name);
@@ -427,17 +458,57 @@ class SpotifyAuth {
 
     // Verify that the correct track is playing
     async verifyPlayback(expectedTrackId, songTitle) {
-        // MOBILE: Skip verification for preview URLs - they always work if loaded
+        // MOBILE: Wait for preview to load and verify playback
         if (this.isMobile) {
-            if (this.audioPlayer && this.currentPreviewUrl && !this.audioPlayer.paused) {
-                console.log('✅ [MOBILE VERIFY] Preview playing:', songTitle);
+            console.log('🔍 [MOBILE VERIFY] Checking preview playback for:', songTitle);
+            
+            // Wait a bit for audio to start loading
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            if (!this.audioPlayer || !this.currentPreviewUrl) {
+                console.warn('⚠️ [MOBILE VERIFY] No audio player or preview URL');
+                return {
+                    success: false,
+                    reason: 'NO_AUDIO_PLAYER',
+                    message: 'Geen audio player beschikbaar'
+                };
+            }
+            
+            // Check if audio is ready
+            const readyState = this.audioPlayer.readyState;
+            console.log(`📊 [MOBILE VERIFY] Audio readyState: ${readyState} (0=none, 1=metadata, 2=current, 3=future, 4=enough)`);
+            
+            // Check if playing or loading
+            if (!this.audioPlayer.paused || readyState >= 2) {
+                console.log('✅ [MOBILE VERIFY] Preview playing or ready:', songTitle);
                 return {
                     success: true,
                     reason: 'MOBILE_PREVIEW',
                     message: 'Preview URL speelt af'
                 };
+            } else if (this.audioPlayer.error) {
+                console.error('🚫 [MOBILE VERIFY] Audio error:', this.audioPlayer.error);
+                return {
+                    success: false,
+                    reason: 'AUDIO_ERROR',
+                    message: `Audio fout: ${this.audioPlayer.error.message}`
+                };
             } else {
-                console.warn('⚠️ [MOBILE VERIFY] Preview not playing');
+                console.warn('⚠️ [MOBILE VERIFY] Preview paused or not ready');
+                console.warn(`   paused: ${this.audioPlayer.paused}, readyState: ${readyState}`);
+                
+                // Give it another chance - wait a bit more
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (!this.audioPlayer.paused || this.audioPlayer.readyState >= 2) {
+                    console.log('✅ [MOBILE VERIFY] Preview ready after retry');
+                    return {
+                        success: true,
+                        reason: 'MOBILE_PREVIEW',
+                        message: 'Preview URL speelt af'
+                    };
+                }
+                
                 return {
                     success: false,
                     reason: 'MOBILE_NOT_PLAYING',
