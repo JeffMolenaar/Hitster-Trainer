@@ -434,9 +434,19 @@ class HitsterQuiz {
         }
 
         try {
+            // Try Spotify preview first, fallback to Deezer if Spotify is null
+            const previewUrl = this.currentSong.previewUrl || this.currentSong.deezerPreviewUrl || null;
+            const previewSource = this.currentSong.previewUrl ? 'Spotify' : 
+                                (this.currentSong.deezerPreviewUrl ? 'Deezer' : 'none');
+            
+            console.log(`🎵 [QUIZ] Preview URL source: ${previewSource}`);
+            if (previewUrl) {
+                console.log(`   URL: ${previewUrl.substring(0, 50)}...`);
+            }
+
             const playResult = await window.spotifyAuth.playTrack(
                 this.currentSong.spotifyId,
-                this.currentSong.previewUrl || null
+                previewUrl
             );
 
             if (!playResult.success) {
