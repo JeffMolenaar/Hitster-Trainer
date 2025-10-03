@@ -43,12 +43,14 @@ switch ($choice) {
         if ($confirm -eq "ja") {
             ssh -t $user@$server "echo '' > $logFile && echo '✅ Log geleegd!'"
             Write-Host "`n✅ Log is geleegd!" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "`n❌ Geannuleerd" -ForegroundColor Red
         }
     }
     "6" {
-        $localPath = ".\spotify-lookup-debug-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+        $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+        $localPath = ".\spotify-lookup-debug-$timestamp.log"
         Write-Host "`n⬇️  Downloaden naar: $localPath`n" -ForegroundColor Yellow
         scp ${user}@${server}:${logFile} $localPath
         Write-Host "`n✅ Download compleet!" -ForegroundColor Green
