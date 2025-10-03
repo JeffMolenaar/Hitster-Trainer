@@ -5,12 +5,45 @@ class SpotifyIDLookup {
         this.songs = [];
         this.results = [];
         this.currentIndex = 0;
+        this.debugEnabled = false; // Toggle debug logging
         this.stats = {
             total: 0,
             found: 0,
             notFound: 0,
             totalConfidence: 0
         };
+    }
+
+    // Debug logging function
+    async logDebug(type, message, details = null) {
+        if (!this.debugEnabled) return;
+
+        // Console log
+        console.log(`🔍 [${type}] ${message}`, details || '');
+
+        // Server-side log
+        try {
+            await fetch('debug-logger.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: type,
+                    message: message,
+                    details: details
+                })
+            });
+        } catch (error) {
+            console.warn('Debug logging failed:', error);
+        }
+    }
+
+    // Toggle debug mode
+    toggleDebug(enabled) {
+        this.debugEnabled = enabled;
+        console.log(`🔍 Debug logging ${enabled ? 'ENABLED' : 'DISABLED'}`);
+        this.logDebug('SYSTEM', `Debug mode ${enabled ? 'enabled' : 'disabled'}`);
     }
 
     async initialize() {
@@ -51,6 +84,11 @@ class SpotifyIDLookup {
             const query = `artist:${artist} track:${title}`;
             const encodedQuery = encodeURIComponent(query);
 
+            await this.logDebug('SEARCH', `Searching: ${artist} - ${title} (${year})`, {
+                query: query,
+                encodedQuery: encodedQuery
+            });
+
             const response = await fetch(
                 `https://api.spotify.com/v1/search?q=${encodedQuery}&type=track&limit=10`,
                 {
@@ -61,19 +99,56 @@ class SpotifyIDLookup {
             );
 
             if (!response.ok) {
+                await this.logDebug('API_ERROR', `Spotify API returned status ${response.status}`, {
+                    artist: artist,
+                    title: title,
+                    status: response.status,
+                    statusText: response.statusText
+                });
                 throw new Error(`Spotify API Error: ${response.status}`);
             }
 
             const data = await response.json();
 
+            await this.logDebug('API_RESPONSE', `Received ${data.tracks?.items?.length || 0} results`, {
+                totalResults: data.tracks?.items?.length || 0,
+                firstThreeResults: data.tracks?.items?.slice(0, 3).map(track => ({
+                    id: track.id,
+                    name: track.name,
+                    artist: track.artists[0]?.name,
+                    year: track.album.release_date?.substring(0, 4),
+                    previewUrl: track.preview_url,
+                    hasPreview: !!track.preview_url
+                }))
+            });
+
             if (!data.tracks || !data.tracks.items || data.tracks.items.length === 0) {
+                await this.logDebug('NO_RESULTS', `No results found for: ${artist} - ${title}`);
                 return null;
             }
 
             // Find best match
-            return this.findBestMatch(data.tracks.items, artist, title, year);
+            const bestMatch = this.findBestMatch(data.tracks.items, artist, title, year);
+            
+            if (bestMatch) {
+                await this.logDebug('MATCH_FOUND', `Best match: ${bestMatch.artist} - ${bestMatch.name}`, {
+                    spotifyId: bestMatch.spotifyId,
+                    confidence: bestMatch.confidence,
+                    previewUrl: bestMatch.previewUrl,
+                    hasPreview: !!bestMatch.previewUrl,
+                    releaseDate: bestMatch.releaseDate
+                });
+            }
+
+            return bestMatch;
         } catch (error) {
             console.error('Search error:', error);
+            await this.logDebug('ERROR', `Search failed: ${error.message}`, {
+                artist: artist,
+                title: title,
+                year: year,
+                error: error.toString()
+            });
             return null;
         }
     }
@@ -346,6 +421,11 @@ class SpotifyIDLookup {
             return;
         }
 
+        await this.logDebug('MANUAL_INPUT', `Manual ID entry for index ${index}`, {
+            spotifyId: spotifyId,
+            originalSong: this.results[index].original
+        });
+
         // Verify the ID exists
         try {
             const response = await fetch(
@@ -358,10 +438,20 @@ class SpotifyIDLookup {
             );
 
             if (!response.ok) {
+                await this.logDebug('MANUAL_ERROR', `Invalid Spotify ID: ${spotifyId}`, {
+                    status: response.status
+                });
                 throw new Error('Invalid Spotify ID');
             }
 
             const track = await response.json();
+
+            await this.logDebug('MANUAL_SUCCESS', `Manual track retrieved: ${track.artists[0].name} - ${track.name}`, {
+                spotifyId: track.id,
+                previewUrl: track.preview_url,
+                hasPreview: !!track.preview_url,
+                releaseDate: track.album.release_date
+            });
 
             // Update result
             this.results[index] = {
@@ -389,6 +479,10 @@ class SpotifyIDLookup {
             this.displayResults();
         } catch (error) {
             alert('Ongeldige Spotify ID! Controleer of het ID correct is.');
+            await this.logDebug('MANUAL_FAILED', `Manual ID verification failed`, {
+                spotifyId: spotifyId,
+                error: error.toString()
+            });
         }
     }
 
@@ -594,4 +688,14 @@ function downloadJS() {
 
 function copyToClipboard() {
     lookupTool.copyToClipboard();
+}
+
+function toggleDebugMode(enabled) {
+    lookupTool.toggleDebug(enabled);
+    
+    if (enabled) {
+        alert('🔍 Debug Mode ENABLED\n\nAlle Spotify API responses worden nu gelogd naar:\n/home/jeffrey/spotify-lookup-debug.log\n\nJe kunt de log bekijken via SSH:\nssh jeffrey@192.168.2.191\ntail -f /home/jeffrey/spotify-lookup-debug.log');
+    } else {
+        alert('🔍 Debug Mode DISABLED\n\nLogging gestopt.');
+    }
 }

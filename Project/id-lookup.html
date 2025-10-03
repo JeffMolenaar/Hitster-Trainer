@@ -1,394 +1,402 @@
 <!DOCTYPE html>
 <html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify ID Lookup - Hitster Trainer</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .lookup-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
 
-        .lookup-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Spotify ID Lookup - Hitster Trainer</title>
+        <link rel="stylesheet" href="style.css">
+        <style>
+            .lookup-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+            }
 
-        .lookup-header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .input-section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-        }
-
-        .input-section h2 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            color: #1db954;
-        }
-
-        #json-input {
-            width: 100%;
-            min-height: 200px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(29, 185, 84, 0.3);
-            border-radius: 10px;
-            padding: 15px;
-            color: white;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            resize: vertical;
-        }
-
-        #json-input:focus {
-            outline: none;
-            border-color: #1db954;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(29, 185, 84, 0.4);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .progress-section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            display: none;
-        }
-
-        .progress-section.active {
-            display: block;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 30px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #1db954 0%, #1ed760 100%);
-            transition: width 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-
-        .progress-info {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .results-section {
-            display: none;
-        }
-
-        .results-section.active {
-            display: block;
-        }
-
-        .result-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-
-        .result-item.success {
-            border-color: rgba(29, 185, 84, 0.5);
-        }
-
-        .result-item.warning {
-            border-color: rgba(255, 165, 0, 0.5);
-        }
-
-        .result-item.error {
-            border-color: rgba(255, 0, 0, 0.5);
-        }
-
-        .result-item:hover {
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .result-album-art {
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
-            object-fit: cover;
-        }
-
-        .result-info {
-            flex: 1;
-        }
-
-        .result-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .result-artist {
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 5px;
-        }
-
-        .result-meta {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .confidence-badge {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .confidence-high {
-            background: rgba(29, 185, 84, 0.3);
-            color: #1ed760;
-        }
-
-        .confidence-medium {
-            background: rgba(255, 165, 0, 0.3);
-            color: #ffa500;
-        }
-
-        .confidence-low {
-            background: rgba(255, 0, 0, 0.3);
-            color: #ff4444;
-        }
-
-        .result-actions {
-            display: flex;
-            gap: 10px;
-            flex-direction: column;
-        }
-
-        .result-actions button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .manual-input {
-            display: none;
-            margin-top: 10px;
-        }
-
-        .manual-input.active {
-            display: flex;
-            gap: 10px;
-        }
-
-        .manual-input input {
-            flex: 1;
-            padding: 8px;
-            border-radius: 5px;
-            border: 2px solid rgba(29, 185, 84, 0.3);
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #1db954;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .auth-prompt {
-            background: rgba(255, 165, 0, 0.2);
-            border: 2px solid rgba(255, 165, 0, 0.5);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .auth-prompt h3 {
-            margin-top: 0;
-            color: #ffa500;
-        }
-
-        @media (max-width: 768px) {
-            .result-item {
-                flex-direction: column;
+            .lookup-header {
                 text-align: center;
+                margin-bottom: 30px;
+            }
+
+            .lookup-header h1 {
+                font-size: 2.5em;
+                margin-bottom: 10px;
+                background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .input-section {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 15px;
+                padding: 30px;
+                margin-bottom: 30px;
+            }
+
+            .input-section h2 {
+                margin-top: 0;
+                margin-bottom: 15px;
+                color: #1db954;
+            }
+
+            #json-input {
+                width: 100%;
+                min-height: 200px;
+                background: rgba(0, 0, 0, 0.3);
+                border: 2px solid rgba(29, 185, 84, 0.3);
+                border-radius: 10px;
+                padding: 15px;
+                color: white;
+                font-family: 'Courier New', monospace;
+                font-size: 14px;
+                resize: vertical;
+            }
+
+            #json-input:focus {
+                outline: none;
+                border-color: #1db954;
             }
 
             .button-group {
-                flex-direction: column;
+                display: flex;
+                gap: 15px;
+                margin-top: 20px;
+                flex-wrap: wrap;
             }
 
             .btn {
-                width: 100%;
+                padding: 15px 30px;
+                border: none;
+                border-radius: 50px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                flex: 1;
+                min-width: 150px;
             }
-        }
-    </style>
-</head>
-<body>
-    <div class="lookup-container">
-        <div class="lookup-header">
-            <h1>🎵 Spotify ID Lookup</h1>
-            <p>Plak je JSON lijst hieronder en laat de magische Spotify zoekfunctie de rest doen!</p>
-        </div>
 
-        <div id="auth-prompt" class="auth-prompt" style="display: none;">
-            <h3>⚠️ Login Required</h3>
-            <p>Je moet eerst inloggen met Spotify om de ID lookup te kunnen gebruiken.</p>
-            <button class="btn btn-primary" onclick="spotifyAuth.login()">Login met Spotify</button>
-        </div>
+            .btn-primary {
+                background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+                color: white;
+            }
 
-        <div class="input-section">
-            <h2>📝 Step 1: Plak je JSON lijst</h2>
-            <textarea id="json-input" placeholder='Plak hier je JSON array, bijvoorbeeld:
+            .btn-primary:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 30px rgba(29, 185, 84, 0.4);
+            }
+
+            .btn-secondary {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+            }
+
+            .btn-secondary:hover:not(:disabled) {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+            .btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .progress-section {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 15px;
+                padding: 30px;
+                margin-bottom: 30px;
+                display: none;
+            }
+
+            .progress-section.active {
+                display: block;
+            }
+
+            .progress-bar {
+                width: 100%;
+                height: 30px;
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 15px;
+                overflow: hidden;
+                margin-bottom: 15px;
+            }
+
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #1db954 0%, #1ed760 100%);
+                transition: width 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+            }
+
+            .progress-info {
+                text-align: center;
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            .results-section {
+                display: none;
+            }
+
+            .results-section.active {
+                display: block;
+            }
+
+            .result-item {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 10px;
+                padding: 20px;
+                margin-bottom: 15px;
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                border: 2px solid transparent;
+                transition: all 0.3s ease;
+            }
+
+            .result-item.success {
+                border-color: rgba(29, 185, 84, 0.5);
+            }
+
+            .result-item.warning {
+                border-color: rgba(255, 165, 0, 0.5);
+            }
+
+            .result-item.error {
+                border-color: rgba(255, 0, 0, 0.5);
+            }
+
+            .result-item:hover {
+                background: rgba(255, 255, 255, 0.08);
+            }
+
+            .result-album-art {
+                width: 80px;
+                height: 80px;
+                border-radius: 8px;
+                object-fit: cover;
+            }
+
+            .result-info {
+                flex: 1;
+            }
+
+            .result-title {
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+
+            .result-artist {
+                color: rgba(255, 255, 255, 0.7);
+                margin-bottom: 5px;
+            }
+
+            .result-meta {
+                font-size: 14px;
+                color: rgba(255, 255, 255, 0.5);
+            }
+
+            .confidence-badge {
+                padding: 5px 15px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+
+            .confidence-high {
+                background: rgba(29, 185, 84, 0.3);
+                color: #1ed760;
+            }
+
+            .confidence-medium {
+                background: rgba(255, 165, 0, 0.3);
+                color: #ffa500;
+            }
+
+            .confidence-low {
+                background: rgba(255, 0, 0, 0.3);
+                color: #ff4444;
+            }
+
+            .result-actions {
+                display: flex;
+                gap: 10px;
+                flex-direction: column;
+            }
+
+            .result-actions button {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.3s ease;
+            }
+
+            .manual-input {
+                display: none;
+                margin-top: 10px;
+            }
+
+            .manual-input.active {
+                display: flex;
+                gap: 10px;
+            }
+
+            .manual-input input {
+                flex: 1;
+                padding: 8px;
+                border-radius: 5px;
+                border: 2px solid rgba(29, 185, 84, 0.3);
+                background: rgba(0, 0, 0, 0.3);
+                color: white;
+            }
+
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+
+            .stat-card {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 10px;
+                padding: 20px;
+                text-align: center;
+            }
+
+            .stat-value {
+                font-size: 2.5em;
+                font-weight: bold;
+                color: #1db954;
+                margin-bottom: 5px;
+            }
+
+            .stat-label {
+                color: rgba(255, 255, 255, 0.7);
+            }
+
+            .auth-prompt {
+                background: rgba(255, 165, 0, 0.2);
+                border: 2px solid rgba(255, 165, 0, 0.5);
+                border-radius: 10px;
+                padding: 20px;
+                text-align: center;
+                margin-bottom: 30px;
+            }
+
+            .auth-prompt h3 {
+                margin-top: 0;
+                color: #ffa500;
+            }
+
+            @media (max-width: 768px) {
+                .result-item {
+                    flex-direction: column;
+                    text-align: center;
+                }
+
+                .button-group {
+                    flex-direction: column;
+                }
+
+                .btn {
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="lookup-container">
+            <div class="lookup-header">
+                <h1>🎵 Spotify ID Lookup</h1>
+                <p>Plak je JSON lijst hieronder en laat de magische Spotify zoekfunctie de rest doen!</p>
+            </div>
+
+            <div id="auth-prompt" class="auth-prompt" style="display: none;">
+                <h3>⚠️ Login Required</h3>
+                <p>Je moet eerst inloggen met Spotify om de ID lookup te kunnen gebruiken.</p>
+                <button class="btn btn-primary" onclick="spotifyAuth.login()">Login met Spotify</button>
+            </div>
+
+            <div class="input-section">
+                <h2>📝 Step 1: Plak je JSON lijst</h2>
+                
+                <!-- Debug Toggle -->
+                <div style="margin-bottom: 15px; padding: 10px; background: rgba(255, 165, 0, 0.1); border-radius: 8px; border: 1px solid rgba(255, 165, 0, 0.3);">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="debug-toggle" onchange="toggleDebugMode(this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="font-weight: 600;">🔍 Debug Mode</span>
+                        <span style="color: #888; font-size: 0.9em;">(Logt alle Spotify API responses naar /home/jeffrey/spotify-lookup-debug.log)</span>
+                    </label>
+                </div>
+                
+                <textarea id="json-input" placeholder='Plak hier je JSON array, bijvoorbeeld:
 [
     {
         "artist": "Barry White",
-        "title": "You\'re The First, The Last, My Everything",
-        "year": 1974,
-        "spotifyId": ""
-    },
-    ...
-]'></textarea>
-            <div class="button-group">
-                <button class="btn btn-primary" onclick="startLookup()">🔍 Zoek Spotify IDs</button>
-                <button class="btn btn-secondary" onclick="clearInput()">🗑️ Clear</button>
-                <button class="btn btn-secondary" onclick="loadExample()">📋 Voorbeeld Laden</button>
+        "title": "You\' re The First, The Last, My Everything", "year" : 1974, "spotifyId" : "" }, ... ]'></textarea>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="startLookup()">🔍 Zoek Spotify IDs</button>
+                    <button class="btn btn-secondary" onclick="clearInput()">🗑️ Clear</button>
+                    <button class="btn btn-secondary" onclick="loadExample()">📋 Voorbeeld Laden</button>
+                </div>
+            </div>
+
+            <div id="progress-section" class="progress-section">
+                <h2>⏳ Bezig met zoeken...</h2>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill">0%</div>
+                </div>
+                <div id="progress-info" class="progress-info">
+                    Voorbereiden...
+                </div>
+            </div>
+
+            <div id="results-section" class="results-section">
+                <h2>✅ Resultaten</h2>
+
+                <div class="stats">
+                    <div class="stat-card">
+                        <div id="stat-total" class="stat-value">0</div>
+                        <div class="stat-label">Totaal</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="stat-found" class="stat-value">0</div>
+                        <div class="stat-label">Gevonden</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="stat-notfound" class="stat-value">0</div>
+                        <div class="stat-label">Niet Gevonden</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="stat-confidence" class="stat-value">0%</div>
+                        <div class="stat-label">Gemiddelde Match</div>
+                    </div>
+                </div>
+
+                <div id="results-list"></div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="saveResults()">💾 Save & Deploy to Server</button>
+                    <button class="btn btn-secondary" onclick="downloadJSON()">⬇️ Download JSON (Backup)</button>
+                    <button class="btn btn-secondary" onclick="downloadJS()">⬇️ Download JS (Backup)</button>
+                    <button class="btn btn-secondary" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+                    <button class="btn btn-secondary" onclick="resetTool()">🔄 Nieuwe Lijst</button>
+                </div>
             </div>
         </div>
 
-        <div id="progress-section" class="progress-section">
-            <h2>⏳ Bezig met zoeken...</h2>
-            <div class="progress-bar">
-                <div id="progress-fill" class="progress-fill">0%</div>
-            </div>
-            <div id="progress-info" class="progress-info">
-                Voorbereiden...
-            </div>
-        </div>
+        <script src="spotify-auth.js"></script>
+        <script src="spotify-id-lookup.js"></script>
+    </body>
 
-        <div id="results-section" class="results-section">
-            <h2>✅ Resultaten</h2>
-            
-            <div class="stats">
-                <div class="stat-card">
-                    <div id="stat-total" class="stat-value">0</div>
-                    <div class="stat-label">Totaal</div>
-                </div>
-                <div class="stat-card">
-                    <div id="stat-found" class="stat-value">0</div>
-                    <div class="stat-label">Gevonden</div>
-                </div>
-                <div class="stat-card">
-                    <div id="stat-notfound" class="stat-value">0</div>
-                    <div class="stat-label">Niet Gevonden</div>
-                </div>
-                <div class="stat-card">
-                    <div id="stat-confidence" class="stat-value">0%</div>
-                    <div class="stat-label">Gemiddelde Match</div>
-                </div>
-            </div>
-
-            <div id="results-list"></div>
-
-            <div class="button-group">
-                <button class="btn btn-primary" onclick="saveResults()">💾 Save & Deploy to Server</button>
-                <button class="btn btn-secondary" onclick="downloadJSON()">⬇️ Download JSON (Backup)</button>
-                <button class="btn btn-secondary" onclick="downloadJS()">⬇️ Download JS (Backup)</button>
-                <button class="btn btn-secondary" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
-                <button class="btn btn-secondary" onclick="resetTool()">🔄 Nieuwe Lijst</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="spotify-auth.js"></script>
-    <script src="spotify-id-lookup.js"></script>
-</body>
 </html>
