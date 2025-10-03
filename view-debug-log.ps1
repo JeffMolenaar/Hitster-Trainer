@@ -23,25 +23,25 @@ $choice = Read-Host "Kies een optie (1-6)"
 switch ($choice) {
     "1" {
         Write-Host "`n📊 Live log monitoring (Ctrl+C om te stoppen)...`n" -ForegroundColor Yellow
-        ssh -t $user@$server "tail -f $logFile"
+        ssh -t "${user}@${server}" "tail -f ${logFile}"
     }
     "2" {
         Write-Host "`n📄 Laatste 50 regels:`n" -ForegroundColor Yellow
-        ssh -t $user@$server "tail -50 $logFile"
+        ssh -t "${user}@${server}" "tail -50 ${logFile}"
     }
     "3" {
         $searchTerm = Read-Host "`nZoek naar (bijv. artist of title)"
         Write-Host "`n🔍 Zoekresultaten voor '$searchTerm':`n" -ForegroundColor Yellow
-        ssh -t $user@$server "grep -i '$searchTerm' $logFile | tail -20"
+        ssh -t "${user}@${server}" "grep -i '${searchTerm}' ${logFile} | tail -20"
     }
     "4" {
         Write-Host "`n📊 Preview URL statistieken:`n" -ForegroundColor Yellow
-        ssh -t $user@$server "echo 'Totaal matches:'; grep 'MATCH_FOUND' $logFile | wc -l; echo ''; echo 'Met preview URL:'; grep 'hasPreview.*true' $logFile | wc -l; echo ''; echo 'Zonder preview URL:'; grep 'hasPreview.*false' $logFile | wc -l"
+        ssh -t "${user}@${server}" "grep 'MATCH_FOUND' ${logFile} | wc -l && grep 'hasPreview.*true' ${logFile} | wc -l && grep 'hasPreview.*false' ${logFile} | wc -l"
     }
     "5" {
         $confirm = Read-Host "`n⚠️  Weet je zeker dat je de log wilt legen? (ja/nee)"
         if ($confirm -eq "ja") {
-            ssh -t "$user@$server" "> $logFile && echo 'Log geleegd!'"
+            ssh -t "${user}@${server}" "echo > ${logFile}"
             Write-Host "`n✅ Log is geleegd!" -ForegroundColor Green
         }
         else {
@@ -52,7 +52,7 @@ switch ($choice) {
         $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
         $localPath = ".\spotify-lookup-debug-$timestamp.log"
         Write-Host "`n⬇️  Downloaden naar: $localPath`n" -ForegroundColor Yellow
-        scp ${user}@${server}:${logFile} $localPath
+        scp "${user}@${server}:${logFile}" $localPath
         Write-Host "`n✅ Download compleet!" -ForegroundColor Green
     }
     default {
