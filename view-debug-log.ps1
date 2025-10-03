@@ -41,7 +41,7 @@ switch ($choice) {
     "5" {
         $confirm = Read-Host "`n⚠️  Weet je zeker dat je de log wilt legen? (ja/nee)"
         if ($confirm -eq "ja") {
-            ssh -t $user@$server "echo '' > $logFile && echo '✅ Log geleegd!'"
+            ssh -t "$user@$server" "> $logFile && echo 'Log geleegd!'"
             Write-Host "`n✅ Log is geleegd!" -ForegroundColor Green
         }
         else {
