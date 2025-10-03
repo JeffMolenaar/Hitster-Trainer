@@ -24,8 +24,60 @@ class SpotifyAuth {
         this.player = null;
         this.deviceId = null;
 
+        // Detect if mobile device
+        this.isMobile = this.detectMobile();
+        console.log('📱 Mobile device detected:', this.isMobile);
+
+        // HTML5 audio player for mobile (using preview URLs)
+        this.audioPlayer = null;
+        this.currentPreviewUrl = null;
+
+        if (this.isMobile) {
+            this.initializeAudioPlayer();
+        }
+
         // Check for token in URL hash (after redirect)
         this.checkForToken();
+    }
+
+    // Detect mobile device
+    detectMobile() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        
+        // Check for mobile patterns
+        const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+        const isMobileUA = mobileRegex.test(userAgent.toLowerCase());
+        
+        // Also check for touch support
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        // Check screen width (mobile typically < 768px)
+        const isSmallScreen = window.innerWidth < 768;
+        
+        return isMobileUA || (isTouchDevice && isSmallScreen);
+    }
+
+    // Initialize HTML5 audio player for mobile
+    initializeAudioPlayer() {
+        if (!this.audioPlayer) {
+            this.audioPlayer = new Audio();
+            this.audioPlayer.preload = 'metadata';
+            
+            // Event listeners
+            this.audioPlayer.addEventListener('ended', () => {
+                console.log('🎵 Audio preview ended');
+            });
+            
+            this.audioPlayer.addEventListener('error', (e) => {
+                console.error('🚫 Audio playback error:', e);
+            });
+            
+            this.audioPlayer.addEventListener('loadedmetadata', () => {
+                console.log('✅ Audio preview loaded');
+            });
+            
+            console.log('🎵 HTML5 Audio player initialized for mobile');
+        }
     }
 
     // Generate random string for PKCE
@@ -55,7 +107,13 @@ class SpotifyAuth {
         if (storedToken) {
             this.accessToken = storedToken;
             console.log('✅ Found stored access token');
-            this.initializePlayer();
+            
+            // Only initialize Web Playback SDK on desktop
+            if (!this.isMobile) {
+                this.initializePlayer();
+            } else {
+                console.log('📱 Mobile device - using preview URLs instead of SDK');
+            }
         }
     }
 
@@ -100,6 +158,12 @@ class SpotifyAuth {
     // Initialize Spotify Web Playback SDK
     async initializePlayer() {
         if (!this.accessToken) return;
+        
+        // Skip SDK initialization on mobile
+        if (this.isMobile) {
+            console.log('📱 Skipping Spotify SDK on mobile - using preview URLs');
+            return;
+        }
 
         // Wait for Spotify SDK to load
         await this.waitForSpotifySDK();
@@ -188,6 +252,52 @@ class SpotifyAuth {
 
     // Play a track by Spotify ID
     async playTrack(trackId) {
+        // MOBILE: Use preview URL with HTML5 audio
+        if (this.isMobile) {
+            console.log('📱 [MOBILE PLAYBACK] Using preview URL for track:', trackId);
+            
+            try {
+                // Get track info to retrieve preview URL
+                const trackInfo = await this.getTrackInfo(trackId);
+                
+                if (!trackInfo) {
+                    console.error('🚫 [MOBILE PLAYBACK] Failed to get track info');
+                    return { success: false, reason: 'TRACK_INFO_FAILED' };
+                }
+                
+                if (!trackInfo.preview_url) {
+                    console.warn('⚠️ [MOBILE PLAYBACK] No preview URL available for this track');
+                    console.warn(`   Track: "${trackInfo.name}" by ${trackInfo.artists.map(a => a.name).join(', ')}`);
+                    return { success: false, reason: 'NO_PREVIEW_URL' };
+                }
+                
+                // Store preview URL and play
+                this.currentPreviewUrl = trackInfo.preview_url;
+                
+                if (this.audioPlayer) {
+                    this.audioPlayer.src = this.currentPreviewUrl;
+                    this.audioPlayer.currentTime = 0;
+                    
+                    try {
+                        await this.audioPlayer.play();
+                        console.log('✅ [MOBILE PLAYBACK] Playing preview:', trackInfo.name);
+                        return { success: true, isMobilePreview: true };
+                    } catch (playError) {
+                        console.error('🚫 [MOBILE PLAYBACK] Play failed:', playError);
+                        return { success: false, reason: 'AUDIO_PLAY_FAILED', error: playError.message };
+                    }
+                } else {
+                    console.error('🚫 [MOBILE PLAYBACK] Audio player not initialized');
+                    return { success: false, reason: 'AUDIO_PLAYER_NOT_READY' };
+                }
+                
+            } catch (error) {
+                console.error('💥 [MOBILE PLAYBACK] Exception:', error);
+                return { success: false, reason: 'MOBILE_PLAYBACK_ERROR', error: error.message };
+            }
+        }
+        
+        // DESKTOP: Use Spotify Web Playback SDK
         if (!this.accessToken || !this.deviceId) {
             console.error('🚫 [PLAY TRACK] Player not ready');
             return { success: false, reason: 'PLAYER_NOT_READY' };
@@ -208,7 +318,7 @@ class SpotifyAuth {
             if (!response.ok) {
                 const errorBody = await response.text();
                 console.error(`🚫 [PLAY TRACK] Failed (${response.status}):`, errorBody);
-                
+
                 // Parse specific errors
                 if (response.status === 404) {
                     return { success: false, reason: 'TRACK_NOT_FOUND' };
@@ -217,7 +327,7 @@ class SpotifyAuth {
                 } else if (response.status === 502 || response.status === 503) {
                     return { success: false, reason: 'SPOTIFY_UNAVAILABLE' };
                 }
-                
+
                 return { success: false, reason: 'PLAYBACK_FAILED', status: response.status };
             }
 
@@ -230,6 +340,17 @@ class SpotifyAuth {
 
     // Pause playback
     async pausePlayback() {
+        // MOBILE: Pause HTML5 audio
+        if (this.isMobile) {
+            if (this.audioPlayer) {
+                this.audioPlayer.pause();
+                console.log('⏸️ [MOBILE PLAYBACK] Paused');
+                return true;
+            }
+            return false;
+        }
+        
+        // DESKTOP: Pause via Spotify API
         if (!this.accessToken || !this.deviceId) return false;
 
         try {
@@ -249,6 +370,22 @@ class SpotifyAuth {
 
     // Resume playback
     async resumePlayback() {
+        // MOBILE: Resume HTML5 audio
+        if (this.isMobile) {
+            if (this.audioPlayer && this.currentPreviewUrl) {
+                try {
+                    await this.audioPlayer.play();
+                    console.log('▶️ [MOBILE PLAYBACK] Resumed');
+                    return true;
+                } catch (error) {
+                    console.error('🚫 [MOBILE PLAYBACK] Resume failed:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
+        
+        // DESKTOP: Resume via Spotify API
         if (!this.accessToken || !this.deviceId) return false;
 
         try {
@@ -290,6 +427,26 @@ class SpotifyAuth {
 
     // Verify that the correct track is playing
     async verifyPlayback(expectedTrackId, songTitle) {
+        // MOBILE: Skip verification for preview URLs - they always work if loaded
+        if (this.isMobile) {
+            if (this.audioPlayer && this.currentPreviewUrl && !this.audioPlayer.paused) {
+                console.log('✅ [MOBILE VERIFY] Preview playing:', songTitle);
+                return {
+                    success: true,
+                    reason: 'MOBILE_PREVIEW',
+                    message: 'Preview URL speelt af'
+                };
+            } else {
+                console.warn('⚠️ [MOBILE VERIFY] Preview not playing');
+                return {
+                    success: false,
+                    reason: 'MOBILE_NOT_PLAYING',
+                    message: 'Preview speelt niet af'
+                };
+            }
+        }
+        
+        // DESKTOP: Full verification via Spotify API
         if (!this.accessToken) {
             return {
                 success: false,
