@@ -255,15 +255,21 @@ class SpotifyAuth {
         // MOBILE: Use preview URL with HTML5 audio
         if (this.isMobile) {
             console.log('📱 [MOBILE PLAYBACK] Using preview URL for track:', trackId);
+            console.log('   Audio player ready:', !!this.audioPlayer);
+            console.log('   Access token:', this.accessToken ? 'Present' : 'Missing');
             
             try {
                 // Get track info to retrieve preview URL
+                console.log('🔍 [MOBILE PLAYBACK] Fetching track info...');
                 const trackInfo = await this.getTrackInfo(trackId);
                 
                 if (!trackInfo) {
                     console.error('🚫 [MOBILE PLAYBACK] Failed to get track info');
                     return { success: false, reason: 'TRACK_INFO_FAILED' };
                 }
+                
+                console.log(`✅ [MOBILE PLAYBACK] Got track: "${trackInfo.name}" by ${trackInfo.artists.map(a => a.name).join(', ')}`);
+                console.log('   Preview URL:', trackInfo.preview_url ? 'Available' : 'NOT AVAILABLE');
                 
                 if (!trackInfo.preview_url) {
                     console.warn('⚠️ [MOBILE PLAYBACK] No preview URL available for this track');
@@ -273,6 +279,7 @@ class SpotifyAuth {
                 
                 // Store preview URL and play
                 this.currentPreviewUrl = trackInfo.preview_url;
+                console.log('🎵 [MOBILE PLAYBACK] Preview URL stored, preparing audio player...');
                 
                 if (this.audioPlayer) {
                     this.audioPlayer.src = this.currentPreviewUrl;

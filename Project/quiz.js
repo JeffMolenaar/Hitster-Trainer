@@ -83,7 +83,7 @@ class HitsterQuiz {
         const usedIndices = new Set();
 
         // Filter songs that have a valid Spotify ID
-        const validSongs = hitsterSongs.filter(song => 
+        const validSongs = hitsterSongs.filter(song =>
             song.spotifyId && song.spotifyId.trim() !== ""
         );
 
@@ -104,7 +104,7 @@ class HitsterQuiz {
         while (songs.length < count && songs.length < validSongs.length) {
             const randomValidIndex = Math.floor(Math.random() * validIndices.length);
             const randomIndex = validIndices[randomValidIndex];
-            
+
             if (!usedIndices.has(randomIndex)) {
                 usedIndices.add(randomIndex);
                 songs.push(hitsterSongs[randomIndex]);
@@ -117,33 +117,33 @@ class HitsterQuiz {
     // Load current song and show first question
     loadSong() {
         this.currentSong = this.songsInQuiz[this.currentSongIndex];
-        
+
         // Validate that song has Spotify ID - skip if not
         if (!this.currentSong.spotifyId || this.currentSong.spotifyId.trim() === "") {
             console.warn(`Song "${this.currentSong.title}" has no Spotify ID, skipping...`);
-            
+
             // Try to find next valid song
             let foundValidSong = false;
             let attempts = 0;
             const maxAttempts = this.songsInQuiz.length;
-            
+
             while (!foundValidSong && attempts < maxAttempts) {
                 this.currentSongIndex++;
                 attempts++;
-                
+
                 // If we reached the end, go to final score
                 if (this.currentSongIndex >= this.songsInQuiz.length) {
                     console.log('No more valid songs available');
                     this.showFinalScore();
                     return;
                 }
-                
+
                 this.currentSong = this.songsInQuiz[this.currentSongIndex];
                 if (this.currentSong.spotifyId && this.currentSong.spotifyId.trim() !== "") {
                     foundValidSong = true;
                 }
             }
-            
+
             // If still no valid song found, end quiz
             if (!foundValidSong) {
                 console.error('Could not find any song with valid Spotify ID');
@@ -152,7 +152,7 @@ class HitsterQuiz {
                 return;
             }
         }
-        
+
         this.currentStep = 1;
 
         // Update progress indicators
@@ -435,18 +435,30 @@ class HitsterQuiz {
 
         try {
             const playResult = await window.spotifyAuth.playTrack(this.currentSong.spotifyId);
-            
+
             if (!playResult.success) {
                 // Playback failed - log and skip
                 console.error(`🚫 [QUIZ] Failed to play "${this.currentSong.title}" by ${this.currentSong.artist}`);
                 console.error(`   Reason: ${playResult.reason}`);
-                
+
                 // Skip this song and try next
                 await this.skipToNextSong(`Playback failed: ${playResult.reason}`);
                 return;
             }
 
-            // Playback started - now verify it's actually playing the correct track
+            console.log(`✅ [QUIZ] Playback started successfully for "${this.currentSong.title}"`);
+            console.log(`   Mobile preview: ${playResult.isMobilePreview || false}`);
+
+            // SKIP VERIFICATION FOR MOBILE - preview URLs are reliable
+            if (window.spotifyAuth.isMobile) {
+                console.log('📱 [QUIZ] Mobile device - skipping verification, trusting preview URL');
+                this.isPlaying = true;
+                this.updatePlayButton();
+                return;
+            }
+
+            // DESKTOP ONLY: Verify playback via Spotify API
+            console.log('🖥️ [QUIZ] Desktop device - verifying playback via Spotify API');
             const verification = await window.spotifyAuth.verifyPlayback(
                 this.currentSong.spotifyId,
                 `${this.currentSong.title} - ${this.currentSong.artist}`
@@ -456,7 +468,7 @@ class HitsterQuiz {
                 // Verification failed - skip this song
                 console.error(`🚫 [QUIZ] Verification failed for "${this.currentSong.title}" by ${this.currentSong.artist}`);
                 console.error(`   Reason: ${verification.reason} - ${verification.message}`);
-                
+
                 await this.skipToNextSong(`Verification failed: ${verification.reason}`);
                 return;
             }
@@ -464,7 +476,7 @@ class HitsterQuiz {
             // Success! Song is playing correctly
             this.isPlaying = true;
             this.updatePlayButton();
-            
+
         } catch (error) {
             console.error('💥 [QUIZ] Exception while playing song:', error);
             await this.skipToNextSong('Exception occurred');
@@ -474,7 +486,7 @@ class HitsterQuiz {
     // Skip to next song when current one fails
     async skipToNextSong(reason) {
         console.warn(`⏭️ [QUIZ] Skipping "${this.currentSong.title}" - Reason: ${reason}`);
-        
+
         // Pause any playback
         if (this.isPlaying) {
             await window.spotifyAuth.pausePlayback();
@@ -483,7 +495,7 @@ class HitsterQuiz {
 
         // Move to next song
         this.currentSongIndex++;
-        
+
         // Check if we have more songs
         if (this.currentSongIndex >= this.songsInQuiz.length) {
             console.log('📊 [QUIZ] No more songs, showing final score');
