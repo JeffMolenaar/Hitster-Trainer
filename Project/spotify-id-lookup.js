@@ -77,6 +77,62 @@ class SpotifyIDLookup {
         }
     }
 
+    // Search for a song on Deezer (fallback for preview URLs)
+    async searchDeezerPreview(artist, title, year) {
+        try {
+            const query = `${artist} ${title}`;
+            const encodedQuery = encodeURIComponent(query);
+
+            await this.logDebug('DEEZER_SEARCH', `Searching Deezer: ${artist} - ${title}`, {
+                query: query
+            });
+
+            const response = await fetch(
+                `https://api.deezer.com/search?q=${encodedQuery}`,
+                {
+                    method: 'GET'
+                }
+            );
+
+            if (!response.ok) {
+                await this.logDebug('DEEZER_ERROR', `Deezer API returned status ${response.status}`);
+                return null;
+            }
+
+            const data = await response.json();
+
+            if (!data.data || data.data.length === 0) {
+                await this.logDebug('DEEZER_NO_RESULTS', `No Deezer results for: ${artist} - ${title}`);
+                return null;
+            }
+
+            // Find best match (first result with preview is usually best)
+            for (let track of data.data) {
+                if (track.preview && track.artist && track.title) {
+                    // Check if it's a reasonable match
+                    const artistMatch = track.artist.name.toLowerCase().includes(artist.toLowerCase()) ||
+                                      artist.toLowerCase().includes(track.artist.name.toLowerCase());
+                    const titleMatch = track.title.toLowerCase().includes(title.toLowerCase()) ||
+                                     title.toLowerCase().includes(track.title.toLowerCase());
+
+                    if (artistMatch && titleMatch) {
+                        await this.logDebug('DEEZER_MATCH', `Deezer preview found: ${track.artist.name} - ${track.title}`, {
+                            deezerPreviewUrl: track.preview,
+                            deezerId: track.id
+                        });
+                        return track.preview;
+                    }
+                }
+            }
+
+            await this.logDebug('DEEZER_NO_MATCH', `No matching Deezer preview with valid URL`);
+            return null;
+        } catch (error) {
+            await this.logDebug('DEEZER_ERROR', `Deezer search failed: ${error.message}`);
+            return null;
+        }
+    }
+
     // Search for a song on Spotify
     async searchSpotifySong(artist, title, year) {
         try {
@@ -110,6 +166,11 @@ class SpotifyIDLookup {
 
             const data = await response.json();
 
+            // Log RAW API response (first track only for brevity)
+            await this.logDebug('RAW_API_RESPONSE', `RAW Spotify API data (first track)`, {
+                firstTrack: data.tracks?.items?.[0] || null
+            });
+
             await this.logDebug('API_RESPONSE', `Received ${data.tracks?.items?.length || 0} results`, {
                 totalResults: data.tracks?.items?.length || 0,
                 firstThreeResults: data.tracks?.items?.slice(0, 3).map(track => ({
@@ -129,7 +190,7 @@ class SpotifyIDLookup {
 
             // Find best match
             const bestMatch = this.findBestMatch(data.tracks.items, artist, title, year);
-            
+
             if (bestMatch) {
                 await this.logDebug('MATCH_FOUND', `Best match: ${bestMatch.artist} - ${bestMatch.name}`, {
                     spotifyId: bestMatch.spotifyId,
@@ -138,6 +199,23 @@ class SpotifyIDLookup {
                     hasPreview: !!bestMatch.previewUrl,
                     releaseDate: bestMatch.releaseDate
                 });
+
+                // If Spotify has no preview URL, try Deezer as fallback
+                if (!bestMatch.previewUrl) {
+                    await this.logDebug('FALLBACK', `Spotify preview is null, trying Deezer...`);
+                    const deezerPreview = await this.searchDeezerPreview(artist, title, year);
+                    if (deezerPreview) {
+                        bestMatch.deezerPreviewUrl = deezerPreview;
+                        await this.logDebug('FALLBACK_SUCCESS', `Using Deezer preview as fallback`, {
+                            deezerPreviewUrl: deezerPreview
+                        });
+                    } else {
+                        bestMatch.deezerPreviewUrl = null;
+                        await this.logDebug('FALLBACK_FAILED', `No Deezer preview available either`);
+                    }
+                } else {
+                    bestMatch.deezerPreviewUrl = null;
+                }
             }
 
             return bestMatch;
@@ -498,7 +576,8 @@ class SpotifyIDLookup {
             title: result.original.title,
             year: result.original.year,
             spotifyId: result.match ? result.match.spotifyId : '',
-            previewUrl: result.match ? result.match.previewUrl : null
+            previewUrl: result.match ? result.match.previewUrl : null,
+            deezerPreviewUrl: result.match ? result.match.deezerPreviewUrl : null
         }));
     }
 
@@ -692,7 +771,7 @@ function copyToClipboard() {
 
 function toggleDebugMode(enabled) {
     lookupTool.toggleDebug(enabled);
-    
+
     if (enabled) {
         alert('🔍 Debug Mode ENABLED\n\nAlle Spotify API responses worden nu gelogd naar:\n/home/jeffrey/spotify-lookup-debug.log\n\nJe kunt de log bekijken via SSH:\nssh jeffrey@192.168.2.191\ntail -f /home/jeffrey/spotify-lookup-debug.log');
     } else {
