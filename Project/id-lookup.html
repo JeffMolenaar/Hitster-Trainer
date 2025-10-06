@@ -329,16 +329,19 @@
 
             <div class="input-section">
                 <h2>📝 Step 1: Plak je JSON lijst</h2>
-                
+
                 <!-- Debug Toggle -->
-                <div style="margin-bottom: 15px; padding: 10px; background: rgba(255, 165, 0, 0.1); border-radius: 8px; border: 1px solid rgba(255, 165, 0, 0.3);">
+                <div
+                    style="margin-bottom: 15px; padding: 10px; background: rgba(255, 165, 0, 0.1); border-radius: 8px; border: 1px solid rgba(255, 165, 0, 0.3);">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" id="debug-toggle" onchange="toggleDebugMode(this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
+                        <input type="checkbox" id="debug-toggle" onchange="toggleDebugMode(this.checked)"
+                            style="width: 20px; height: 20px; cursor: pointer;">
                         <span style="font-weight: 600;">🔍 Debug Mode</span>
-                        <span style="color: #888; font-size: 0.9em;">(Logt alle Spotify API responses naar /home/jeffrey/spotify-lookup-debug.log)</span>
+                        <span style="color: #888; font-size: 0.9em;">(Logt alle Spotify API responses naar
+                            /home/jeffrey/spotify-lookup-debug.log)</span>
                     </label>
                 </div>
-                
+
                 <textarea id="json-input" placeholder='Plak hier je JSON array, bijvoorbeeld:
 [
     {

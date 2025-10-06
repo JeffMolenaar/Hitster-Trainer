@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+    <head>
+        <meta charset="UTF-8">
+        <title>Debug Logger Test</title>
+    </head>
+
+    <body>
+        <h1>🔍 Debug Logger Test</h1>
+        <button onclick="testLogger()">Test Logger</button>
+        <div id="output" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+
+        <script>
+            async function testLogger() {
+                const output = document.getElementById('output');
+                output.innerHTML = '⏳ Testing logger...';
+
+                try {
+                    // Test 1: Direct fetch
+                    console.log('📤 Sending test to debug-logger.php...');
+
+                    const response = await fetch('debug-logger.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            type: 'TEST',
+                            message: 'Test from debug-test.html',
+                            details: {
+                                timestamp: new Date().toISOString(),
+                                test: true
+                            }
+                        })
+                    });
+
+                    const result = await response.json();
+                    console.log('📥 Response:', result);
+
+                    if (result.success) {
+                        output.innerHTML = `
+                        ✅ <strong>SUCCESS!</strong><br>
+                        Log file: ${result.logFile}<br>
+                        Bytes written: ${result.bytesWritten}<br>
+                        Timestamp: ${result.timestamp}<br><br>
+                        <strong>Check de log:</strong><br>
+                        <code>ssh jeffrey@192.168.2.191 "tail -10 /home/jeffrey/spotify-lookup-debug.log"</code>
+                    `;
+                    } else {
+                        output.innerHTML = `❌ <strong>FAILED:</strong> ${result.error || 'Unknown error'}`;
+                    }
+                } catch (error) {
+                    console.error('❌ Error:', error);
+                    output.innerHTML = `❌ <strong>ERROR:</strong> ${error.message}<br><br>Check browser console (F12) voor details.`;
+                }
+            }
+
+            // Auto-test on load
+            window.addEventListener('load', () => {
+                console.log('🔍 Debug Logger Test Page Loaded');
+                console.log('Click the button to test the logger');
+            });
+        </script>
+    </body>
+
+</html>

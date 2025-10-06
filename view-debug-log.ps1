@@ -6,11 +6,11 @@ Write-Host "=====================================`n" -ForegroundColor Cyan
 
 $server = "192.168.2.191"
 $user = "jeffrey"
-$logFile = "/home/jeffrey/spotify-lookup-debug.log"
+$logFile = "/var/log/hitster-trainer/spotify-lookup-debug.log"
 
 Write-Host "Debug log locatie: $logFile`n" -ForegroundColor Yellow
 
-Write-Host "Beschikbare commando's:" -ForegroundColor Green
+Write-Host "Beschikbare commandos:" -ForegroundColor Green
 Write-Host "1. Live log bekijken (tail -f)"
 Write-Host "2. Laatste 50 regels"
 Write-Host "3. Zoek naar specifiek nummer"
@@ -31,7 +31,7 @@ switch ($choice) {
     }
     "3" {
         $searchTerm = Read-Host "`nZoek naar (bijv. artist of title)"
-        Write-Host "`n🔍 Zoekresultaten voor '$searchTerm':`n" -ForegroundColor Yellow
+        Write-Host "`n🔍 Zoekresultaten voor ``$searchTerm``:`n" -ForegroundColor Yellow
         ssh -t "${user}@${server}" "grep -i ${searchTerm} ${logFile} | tail -20"
     }
     "4" {

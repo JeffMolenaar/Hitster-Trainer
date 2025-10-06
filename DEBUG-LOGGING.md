@@ -6,7 +6,7 @@ Debug logging systeem dat alle Spotify API responses logt naar een server-side l
 
 ## Locatie
 
-**Log bestand:** `/home/jeffrey/spotify-lookup-debug.log`
+**Log bestand:** `/var/log/hitster-trainer/spotify-lookup-debug.log`
 
 ## Hoe te gebruiken
 

@@ -5,45 +5,12 @@ class SpotifyIDLookup {
         this.songs = [];
         this.results = [];
         this.currentIndex = 0;
-        this.debugEnabled = false; // Toggle debug logging
         this.stats = {
             total: 0,
             found: 0,
             notFound: 0,
             totalConfidence: 0
         };
-    }
-
-    // Debug logging function
-    async logDebug(type, message, details = null) {
-        if (!this.debugEnabled) return;
-
-        // Console log
-        console.log(`🔍 [${type}] ${message}`, details || '');
-
-        // Server-side log
-        try {
-            await fetch('debug-logger.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    type: type,
-                    message: message,
-                    details: details
-                })
-            });
-        } catch (error) {
-            console.warn('Debug logging failed:', error);
-        }
-    }
-
-    // Toggle debug mode
-    toggleDebug(enabled) {
-        this.debugEnabled = enabled;
-        console.log(`🔍 Debug logging ${enabled ? 'ENABLED' : 'DISABLED'}`);
-        this.logDebug('SYSTEM', `Debug mode ${enabled ? 'enabled' : 'disabled'}`);
     }
 
     async initialize() {
@@ -63,73 +30,17 @@ class SpotifyIDLookup {
             if (!Array.isArray(parsed)) {
                 throw new Error('Input moet een array zijn');
             }
-
+            
             // Validate each song object
             for (let song of parsed) {
                 if (!song.artist || !song.title || !song.year) {
                     throw new Error('Elk nummer moet artist, title en year bevatten');
                 }
             }
-
+            
             return parsed;
         } catch (error) {
             throw new Error(`JSON Parse Error: ${error.message}`);
-        }
-    }
-
-    // Search for a song on Deezer (fallback for preview URLs)
-    async searchDeezerPreview(artist, title, year) {
-        try {
-            const query = `${artist} ${title}`;
-
-            await this.logDebug('DEEZER_SEARCH', `Searching Deezer: ${artist} - ${title}`, {
-                query: query
-            });
-
-            // Use server-side proxy to avoid CORS issues
-            const response = await fetch(
-                `deezer-proxy.php?q=${encodeURIComponent(query)}`,
-                {
-                    method: 'GET'
-                }
-            );
-
-            if (!response.ok) {
-                await this.logDebug('DEEZER_ERROR', `Deezer proxy returned status ${response.status}`);
-                return null;
-            }
-
-            const data = await response.json();
-
-            if (!data.data || data.data.length === 0) {
-                await this.logDebug('DEEZER_NO_RESULTS', `No Deezer results for: ${artist} - ${title}`);
-                return null;
-            }
-
-            // Find best match (first result with preview is usually best)
-            for (let track of data.data) {
-                if (track.preview && track.artist && track.title) {
-                    // Check if it's a reasonable match
-                    const artistMatch = track.artist.name.toLowerCase().includes(artist.toLowerCase()) ||
-                        artist.toLowerCase().includes(track.artist.name.toLowerCase());
-                    const titleMatch = track.title.toLowerCase().includes(title.toLowerCase()) ||
-                        title.toLowerCase().includes(track.title.toLowerCase());
-
-                    if (artistMatch && titleMatch) {
-                        await this.logDebug('DEEZER_MATCH', `Deezer preview found: ${track.artist.name} - ${track.title}`, {
-                            deezerPreviewUrl: track.preview,
-                            deezerId: track.id
-                        });
-                        return track.preview;
-                    }
-                }
-            }
-
-            await this.logDebug('DEEZER_NO_MATCH', `No matching Deezer preview with valid URL`);
-            return null;
-        } catch (error) {
-            await this.logDebug('DEEZER_ERROR', `Deezer search failed: ${error.message}`);
-            return null;
         }
     }
 
@@ -139,12 +50,7 @@ class SpotifyIDLookup {
             // Build search query
             const query = `artist:${artist} track:${title}`;
             const encodedQuery = encodeURIComponent(query);
-
-            await this.logDebug('SEARCH', `Searching: ${artist} - ${title} (${year})`, {
-                query: query,
-                encodedQuery: encodedQuery
-            });
-
+            
             const response = await fetch(
                 `https://api.spotify.com/v1/search?q=${encodedQuery}&type=track&limit=10`,
                 {
@@ -155,78 +61,19 @@ class SpotifyIDLookup {
             );
 
             if (!response.ok) {
-                await this.logDebug('API_ERROR', `Spotify API returned status ${response.status}`, {
-                    artist: artist,
-                    title: title,
-                    status: response.status,
-                    statusText: response.statusText
-                });
                 throw new Error(`Spotify API Error: ${response.status}`);
             }
 
             const data = await response.json();
-
-            // Log RAW API response (first track only for brevity)
-            await this.logDebug('RAW_API_RESPONSE', `RAW Spotify API data (first track)`, {
-                firstTrack: data.tracks?.items?.[0] || null
-            });
-
-            await this.logDebug('API_RESPONSE', `Received ${data.tracks?.items?.length || 0} results`, {
-                totalResults: data.tracks?.items?.length || 0,
-                firstThreeResults: data.tracks?.items?.slice(0, 3).map(track => ({
-                    id: track.id,
-                    name: track.name,
-                    artist: track.artists[0]?.name,
-                    year: track.album.release_date?.substring(0, 4),
-                    previewUrl: track.preview_url,
-                    hasPreview: !!track.preview_url
-                }))
-            });
-
+            
             if (!data.tracks || !data.tracks.items || data.tracks.items.length === 0) {
-                await this.logDebug('NO_RESULTS', `No results found for: ${artist} - ${title}`);
                 return null;
             }
 
             // Find best match
-            const bestMatch = this.findBestMatch(data.tracks.items, artist, title, year);
-
-            if (bestMatch) {
-                await this.logDebug('MATCH_FOUND', `Best match: ${bestMatch.artist} - ${bestMatch.name}`, {
-                    spotifyId: bestMatch.spotifyId,
-                    confidence: bestMatch.confidence,
-                    previewUrl: bestMatch.previewUrl,
-                    hasPreview: !!bestMatch.previewUrl,
-                    releaseDate: bestMatch.releaseDate
-                });
-
-                // If Spotify has no preview URL, try Deezer as fallback
-                if (!bestMatch.previewUrl) {
-                    await this.logDebug('FALLBACK', `Spotify preview is null, trying Deezer...`);
-                    const deezerPreview = await this.searchDeezerPreview(artist, title, year);
-                    if (deezerPreview) {
-                        bestMatch.deezerPreviewUrl = deezerPreview;
-                        await this.logDebug('FALLBACK_SUCCESS', `Using Deezer preview as fallback`, {
-                            deezerPreviewUrl: deezerPreview
-                        });
-                    } else {
-                        bestMatch.deezerPreviewUrl = null;
-                        await this.logDebug('FALLBACK_FAILED', `No Deezer preview available either`);
-                    }
-                } else {
-                    bestMatch.deezerPreviewUrl = null;
-                }
-            }
-
-            return bestMatch;
+            return this.findBestMatch(data.tracks.items, artist, title, year);
         } catch (error) {
             console.error('Search error:', error);
-            await this.logDebug('ERROR', `Search failed: ${error.message}`, {
-                artist: artist,
-                title: title,
-                year: year,
-                error: error.toString()
-            });
             return null;
         }
     }
@@ -318,7 +165,7 @@ class SpotifyIDLookup {
         const progressSection = document.getElementById('progress-section');
         const progressFill = document.getElementById('progress-fill');
         const progressInfo = document.getElementById('progress-info');
-
+        
         progressSection.classList.add('active');
 
         for (let i = 0; i < songs.length; i++) {
@@ -363,16 +210,16 @@ class SpotifyIDLookup {
     displayResults() {
         const resultsSection = document.getElementById('results-section');
         const resultsList = document.getElementById('results-list');
-
+        
         resultsSection.classList.add('active');
 
         // Update stats
         document.getElementById('stat-total').textContent = this.stats.total;
         document.getElementById('stat-found').textContent = this.stats.found;
         document.getElementById('stat-notfound').textContent = this.stats.notFound;
-
-        const avgConfidence = this.stats.found > 0
-            ? Math.round(this.stats.totalConfidence / this.stats.found)
+        
+        const avgConfidence = this.stats.found > 0 
+            ? Math.round(this.stats.totalConfidence / this.stats.found) 
             : 0;
         document.getElementById('stat-confidence').textContent = avgConfidence + '%';
 
@@ -390,7 +237,7 @@ class SpotifyIDLookup {
     createResultItem(result, index) {
         const div = document.createElement('div');
         div.className = 'result-item';
-
+        
         if (result.status === 'found') {
             const confidence = result.match.confidence;
             if (confidence >= 80) {
@@ -427,9 +274,10 @@ class SpotifyIDLookup {
                     ` : ''}
                 </div>
                 <div class="result-actions">
-                    <span class="confidence-badge ${result.match.confidence >= 80 ? 'confidence-high' :
-                    result.match.confidence >= 60 ? 'confidence-medium' : 'confidence-low'
-                }">
+                    <span class="confidence-badge ${
+                        result.match.confidence >= 80 ? 'confidence-high' :
+                        result.match.confidence >= 60 ? 'confidence-medium' : 'confidence-low'
+                    }">
                         ${result.match.confidence}% match
                     </span>
                     <button onclick="lookupTool.changeMatch(${index})" style="background: #ffa500; color: white;">
@@ -474,7 +322,7 @@ class SpotifyIDLookup {
                 ❌
             </button>
         `;
-
+        
         div.appendChild(manualDiv);
         return div;
     }
@@ -499,11 +347,6 @@ class SpotifyIDLookup {
             return;
         }
 
-        await this.logDebug('MANUAL_INPUT', `Manual ID entry for index ${index}`, {
-            spotifyId: spotifyId,
-            originalSong: this.results[index].original
-        });
-
         // Verify the ID exists
         try {
             const response = await fetch(
@@ -516,20 +359,10 @@ class SpotifyIDLookup {
             );
 
             if (!response.ok) {
-                await this.logDebug('MANUAL_ERROR', `Invalid Spotify ID: ${spotifyId}`, {
-                    status: response.status
-                });
                 throw new Error('Invalid Spotify ID');
             }
 
             const track = await response.json();
-
-            await this.logDebug('MANUAL_SUCCESS', `Manual track retrieved: ${track.artists[0].name} - ${track.name}`, {
-                spotifyId: track.id,
-                previewUrl: track.preview_url,
-                hasPreview: !!track.preview_url,
-                releaseDate: track.album.release_date
-            });
 
             // Update result
             this.results[index] = {
@@ -557,10 +390,6 @@ class SpotifyIDLookup {
             this.displayResults();
         } catch (error) {
             alert('Ongeldige Spotify ID! Controleer of het ID correct is.');
-            await this.logDebug('MANUAL_FAILED', `Manual ID verification failed`, {
-                spotifyId: spotifyId,
-                error: error.toString()
-            });
         }
     }
 
@@ -575,16 +404,14 @@ class SpotifyIDLookup {
             artist: result.original.artist,
             title: result.original.title,
             year: result.original.year,
-            spotifyId: result.match ? result.match.spotifyId : '',
-            previewUrl: result.match ? result.match.previewUrl : null,
-            deezerPreviewUrl: result.match ? result.match.deezerPreviewUrl : null
+            spotifyId: result.match ? result.match.spotifyId : ''
         }));
     }
 
     // Save results to hitster-songs.js format
     async saveResults() {
         const finalResults = this.getFinalResults();
-
+        
         // Ask for confirmation
         const confirmed = confirm(
             `🔄 Weet je het zeker?\n\n` +
@@ -594,7 +421,7 @@ class SpotifyIDLookup {
             `Niet gevonden: ${this.stats.notFound}\n\n` +
             `Er wordt automatisch een backup gemaakt.`
         );
-
+        
         if (!confirmed) {
             return;
         }
@@ -607,7 +434,7 @@ class SpotifyIDLookup {
         try {
             // Secret key for basic security (you should change this!)
             const SECRET_KEY = 'hitster-admin-2024';
-
+            
             const response = await fetch('update-songs.php', {
                 method: 'POST',
                 headers: {
@@ -662,7 +489,7 @@ class SpotifyIDLookup {
     downloadJS() {
         const finalResults = this.getFinalResults();
         const jsContent = `// Hitster Songs Database\n// Backup created: ${new Date().toISOString()}\nconst hitsterSongs = ${JSON.stringify(finalResults, null, 4)};\n`;
-
+        
         const blob = new Blob([jsContent], { type: 'application/javascript' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -676,7 +503,7 @@ class SpotifyIDLookup {
     copyToClipboard() {
         const finalResults = this.getFinalResults();
         const text = JSON.stringify(finalResults, null, 4);
-
+        
         navigator.clipboard.writeText(text).then(() => {
             alert('✅ Gekopieerd naar clipboard!');
         }).catch(err => {
@@ -697,7 +524,7 @@ window.addEventListener('load', async () => {
 // UI Functions
 async function startLookup() {
     const input = document.getElementById('json-input').value.trim();
-
+    
     if (!input) {
         alert('⚠️ Plak eerst je JSON lijst!');
         return;
@@ -705,7 +532,7 @@ async function startLookup() {
 
     try {
         const songs = lookupTool.parseInput(input);
-
+        
         if (!await lookupTool.initialize()) {
             alert('⚠️ Je moet eerst inloggen met Spotify!');
             return;
@@ -742,7 +569,7 @@ function loadExample() {
             "spotifyId": ""
         }
     ];
-
+    
     document.getElementById('json-input').value = JSON.stringify(example, null, 4);
 }
 
@@ -767,14 +594,4 @@ function downloadJS() {
 
 function copyToClipboard() {
     lookupTool.copyToClipboard();
-}
-
-function toggleDebugMode(enabled) {
-    lookupTool.toggleDebug(enabled);
-
-    if (enabled) {
-        alert('🔍 Debug Mode ENABLED\n\nAlle Spotify API responses worden nu gelogd naar:\n/home/jeffrey/spotify-lookup-debug.log\n\nJe kunt de log bekijken via SSH:\nssh jeffrey@192.168.2.191\ntail -f /home/jeffrey/spotify-lookup-debug.log');
-    } else {
-        alert('🔍 Debug Mode DISABLED\n\nLogging gestopt.');
-    }
 }

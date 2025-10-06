@@ -1,0 +1,64 @@
+HITSTER TRAINER - SERVER BACKUP
+================================
+
+Backup Datum: 3 oktober 2025, 07:58
+Server: 192.168.2.191
+Directory: /var/www/hitster-trainer/
+URL: https://hitster.millercodings.nl
+
+REDEN BACKUP:
+-------------
+Backup gemaakt voordat mobiele playback functionaliteit wordt geïmplementeerd.
+Wijziging: Toevoegen van preview URL support voor mobiele apparaten.
+
+BESTANDEN GEBACKUPT:
+--------------------
+✓ app.js
+✓ callback.html
+✓ demo.html
+✓ hitster-songs.js (46KB - huidige song database)
+✓ id-lookup.html
+✓ index.html
+✓ quiz.js
+✓ spotify-auth.js
+✓ spotify-id-lookup.js
+✓ style.css
+✓ update-songs.php
+✓ SECURITY-SETUP.md
+✓ SPOTIFY-ID-LOOKUP-GUIDE.md
+✓ backups/hitster-songs-2025-10-02-115835.js
+
+TOTAAL: 14 bestanden, ~0.16 MB
+
+RESTORE INSTRUCTIES:
+--------------------
+Om deze backup te restoren:
+
+1. Upload alle bestanden naar server:
+   scp -r * jeffrey@192.168.2.191:/tmp/restore/
+
+2. SSH naar server en kopieer:
+   ssh jeffrey@192.168.2.191
+   sudo cp -r /tmp/restore/* /var/www/hitster-trainer/
+   sudo chown -R www-data:www-data /var/www/hitster-trainer/
+   sudo chmod 644 /var/www/hitster-trainer/*
+
+3. Test de website:
+   https://hitster.millercodings.nl
+
+BELANGRIJKE NOTES:
+------------------
+- Deze backup bevat de WERKENDE versie vóór mobiele playback wijzigingen
+- Secret key in update-songs.php: Controleer na restore
+- Spotify Client ID in spotify-auth.js: Blijft hetzelfde
+- Database bevat songs MET Spotify IDs (na cleanup)
+
+VOLGENDE STAPPEN:
+-----------------
+Na backup implementatie:
+1. Mobiele detectie toevoegen
+2. Preview URL support implementeren
+3. HTML5 audio player voor mobiel
+4. Desktop blijft Spotify Web Playback SDK gebruiken
+
+Backup gemaakt door: GitHub Copilot

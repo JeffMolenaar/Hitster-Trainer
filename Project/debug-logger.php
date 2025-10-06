@@ -32,8 +32,8 @@ if (!$data) {
     exit;
 }
 
-// Log file location
-$logFile = '/home/jeffrey/spotify-lookup-debug.log';
+// Log file location (www-data has write access here)
+$logFile = '/var/log/hitster-trainer/spotify-lookup-debug.log';
 
 // Create log entry
 $timestamp = date('Y-m-d H:i:s');
